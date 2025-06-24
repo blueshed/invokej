@@ -91,6 +91,26 @@ async deploy(c, version = "latest") {
 ### ⚡ **Lightweight Distribution**
 Small package size with fast startup and easy distribution.
 
+### 🔒 **Private Methods**
+Methods starting with underscore (`_`) are private and cannot be called from CLI:
+
+```javascript
+export class Tasks {
+  /** Public task - visible in CLI */
+  async build(c) {
+    await this._validateEnvironment(c);
+    await c.run("npm run build");
+  }
+
+  /** Private helper - hidden from CLI */
+  async _validateEnvironment(c) {
+    // Internal validation logic
+  }
+}
+```
+
+Private methods are automatically filtered from help output and CLI execution.
+
 ## Context API
 
 The context object (`c`) provides methods for executing shell commands:
@@ -152,6 +172,8 @@ Examples:
   invokej test --coverage true     # Run test with coverage
 ```
 
+**Note:** Methods starting with underscore (`_methodName`) are private and cannot be called from the command line.
+
 ## Task Examples
 
 ### Build System
@@ -170,6 +192,7 @@ export class Tasks {
 
   /** Build for production */
   async build(c) {
+    await this._validateEnvironment(c);
     await c.run("npm run build", { echo: true });
     console.log("✅ Build complete!");
   }
@@ -182,9 +205,23 @@ export class Tasks {
     // Build
     await this.build(c);
 
-    // Deploy
+    // Deploy with environment validation
+    await this._checkDeploymentReadiness(c, env);
     await c.run(`npm run deploy:${env}`, { echo: true });
     console.log(`🚀 Deployed to ${env}!`);
+  }
+
+  /** Private: Validate build environment */
+  async _validateEnvironment(c) {
+    const result = await c.run("node --version", { hide: true });
+    console.log(`Node version: ${result.stdout.trim()}`);
+  }
+
+  /** Private: Check if ready for deployment */
+  async _checkDeploymentReadiness(c, env) {
+    if (env === "production") {
+      await c.run("npm audit --audit-level high", { echo: true });
+    }
   }
 }
 ```

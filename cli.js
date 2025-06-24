@@ -49,7 +49,7 @@ if (argv.includes("-l") || argv.includes("--list")) {
 }
 
 if (argv.includes("--version")) {
-  console.log(`Version 0.1.4`);
+  console.log(`Version 0.1.5`);
   process.exit(0);
 }
 
@@ -58,6 +58,13 @@ const [subcommand, ...args] = argv;
 const fn = instance[subcommand];
 if (typeof fn !== "function") {
   console.error(`Unknown task "${subcommand}"\n`);
+  printTaskList(instance);
+  process.exit(1);
+}
+
+// Check if method is private (starts with underscore)
+if (subcommand.startsWith("_")) {
+  console.error(`Cannot call private method "${subcommand}"\n`);
   printTaskList(instance);
   process.exit(1);
 }
@@ -78,7 +85,12 @@ function printTaskList(instance) {
 
   const methods = Object.getOwnPropertyNames(
     Object.getPrototypeOf(instance),
-  ).filter((m) => m !== "constructor" && typeof instance[m] === "function");
+  ).filter(
+    (m) =>
+      m !== "constructor" &&
+      typeof instance[m] === "function" &&
+      !m.startsWith("_"),
+  );
 
   for (const m of methods) {
     const doc = taskDocs[m] ?? "";
@@ -88,7 +100,7 @@ function printTaskList(instance) {
 
 function printHelp(instance) {
   console.log(
-    `invokej — JavaScript task runner inspired by Python Invoke — version 0.1.4\n`,
+    `invokej — JavaScript task runner inspired by Python Invoke — version 0.1.5\n`,
   );
 
   if (classDoc) {
@@ -99,7 +111,12 @@ function printHelp(instance) {
 
   const methods = Object.getOwnPropertyNames(
     Object.getPrototypeOf(instance),
-  ).filter((m) => m !== "constructor" && typeof instance[m] === "function");
+  ).filter(
+    (m) =>
+      m !== "constructor" &&
+      typeof instance[m] === "function" &&
+      !m.startsWith("_"),
+  );
 
   for (const m of methods) {
     const doc = taskDocs[m] ?? "";
@@ -208,7 +225,7 @@ function loadTaskDocs(filePath) {
 
   while ((match = methodRegex.exec(tasksClassContent)) !== null) {
     const [, comment, methodName] = match;
-    if (methodName !== "constructor") {
+    if (methodName !== "constructor" && !methodName.startsWith("_")) {
       docs[methodName] = comment.trim();
     }
   }
