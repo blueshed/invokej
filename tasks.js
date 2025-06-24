@@ -1,5 +1,6 @@
 import { S3Client, sql, version } from "bun";
 
+/** our tasks manager */
 export class Tasks {
   /** Show current working directory (sync method test) */
   info(c) {

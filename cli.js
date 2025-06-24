@@ -34,7 +34,7 @@ if (!Tasks) {
 
 const instance = new Tasks();
 const context = new Context();
-const taskDocs = loadTaskDocs(tasksPath);
+const { taskDocs, classDoc } = loadTaskDocs(tasksPath);
 
 const argv = process.argv.slice(2);
 
@@ -49,7 +49,7 @@ if (argv.includes("-l") || argv.includes("--list")) {
 }
 
 if (argv.includes("--version")) {
-  console.log(`Version 0.1.0`);
+  console.log(`Version 0.1.3`);
   process.exit(0);
 }
 
@@ -71,6 +71,30 @@ try {
 }
 
 function printTaskList(instance) {
+  if (classDoc) {
+    console.log(`${classDoc}\n`);
+  }
+  console.log("Available tasks:\n");
+
+  const methods = Object.getOwnPropertyNames(
+    Object.getPrototypeOf(instance),
+  ).filter((m) => m !== "constructor" && typeof instance[m] === "function");
+
+  for (const m of methods) {
+    const doc = taskDocs[m] ?? "";
+    console.log(`  ${m}${doc ? " — " + doc : ""}`);
+  }
+}
+
+function printHelp(instance) {
+  console.log(
+    `invokej — JavaScript task runner inspired by Python Invoke — version 0.1.3\n`,
+  );
+
+  if (classDoc) {
+    console.log(`${classDoc}\n`);
+  }
+
   console.log("Available tasks:\n");
 
   const methods = Object.getOwnPropertyNames(
@@ -82,22 +106,29 @@ function printTaskList(instance) {
     console.log(`  ${m}${doc ? " — " + doc : ""}`);
   }
 
-  console.log(`Usage:`);
+  console.log(`\nUsage:`);
   console.log(`  invokej <task> [args...]`);
   console.log(`  invokej -l           # list tasks`);
   console.log(`  invokej -h           # help`);
   console.log(`  invokej --version    # show version`);
-}
-
-function printHelp(instance) {
   console.log(
-    `invokej — JavaScript task runner inspired by Python Invoke — version 0.1.0\n`,
+    `\nFor more information about a specific task, run it with invalid arguments to see its usage.`,
   );
-  printTaskList(instance);
 }
 
 function loadTaskDocs(filePath) {
   const source = readFileSync(filePath, "utf-8");
+
+  // Match class comment: /** comment */ export class Tasks
+  const classRegex = /\/\*\*(.*?)\*\/\s*export\s+class\s+Tasks/s;
+  const classMatch = classRegex.exec(source);
+  const classDoc = classMatch
+    ? classMatch[1].replace(/^\s*\*?\s?/gm, "").trim()
+    : null;
+
+  // Match method comments, but exclude the class comment by starting search after class declaration
+  const classEnd = source.indexOf("export class Tasks");
+  const methodSource = classEnd >= 0 ? source.substring(classEnd) : source;
 
   // Match: /** comment */ methodName(...) or /** comment */ async methodName(...)
   const regex = /\/\*\*(.*?)\*\/\s*(?:async\s+)?(\w+)\s*\(/gs;
@@ -105,10 +136,13 @@ function loadTaskDocs(filePath) {
   const docs = {};
   let match;
 
-  while ((match = regex.exec(source)) !== null) {
+  while ((match = regex.exec(methodSource)) !== null) {
     const [, comment, name] = match;
-    docs[name] = comment.trim().replace(/\s*\*\s*/g, " ");
+    // Skip constructor and class name
+    if (name !== "constructor" && name !== "Tasks") {
+      docs[name] = comment.replace(/^\s*\*?\s?/gm, "").trim();
+    }
   }
 
-  return docs;
+  return { taskDocs: docs, classDoc };
 }
