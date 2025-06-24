@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { readFileSync } from "fs";
 import path from "path";
 import { Context } from "./context.js";

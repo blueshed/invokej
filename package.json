@@ -2,23 +2,22 @@
   "name": "invokej",
   "version": "0.1.0",
   "description": "A JavaScript/Bun implementation inspired by Python's Invoke - task execution and shell command management",
-  "main": "dist/invokej",
+  "main": "cli.js",
   "type": "module",
   "bin": {
-    "invokej": "./dist/invokej",
-    "inv": "./dist/invokej"
+    "invokej": "./cli.js",
+    "invj": "./cli.js"
   },
   "files": [
-    "dist/invokej",
+    "cli.js",
+    "context.js",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
-    "build": "bun build cli.js --compile --outfile dist/invokej",
     "test": "bun test",
-    "prepublishOnly": "bun run build",
     "dev": "bun cli.js",
-    "example": "bun dist/invokej --list"
+    "example": "bun cli.js --list"
   },
   "keywords": [
     "invoke",
@@ -43,9 +42,6 @@
   "homepage": "https://github.com/blueshed/invokej#readme",
   "engines": {
     "node": ">=16.0.0"
-  },
-  "peerDependencies": {
-    "bun": ">=1.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

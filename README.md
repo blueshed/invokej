@@ -47,6 +47,10 @@ invokej --list           # List all available tasks
 invokej hello            # Run the hello task
 invokej hello "Alice"    # Run hello with an argument
 invokej build prod       # Run build with env=prod
+
+# Or use the short alias
+invj --list
+invj hello "Alice"
 ```
 
 ## Features
@@ -78,8 +82,8 @@ async deploy(c, version = "latest") {
 }
 ```
 
-### ⚡ **Single Binary Distribution**
-Built with Bun's compile feature for fast startup and easy distribution.
+### ⚡ **Lightweight Distribution**
+Small package size with fast startup and easy distribution.
 
 ## Context API
 
@@ -128,6 +132,8 @@ console.log(result.failed);  // true if code !== 0
 
 ```bash
 invokej [options] <task> [task-args...]
+# or
+invj [options] <task> [task-args...]
 
 Options:
   -l, --list     List available tasks
@@ -136,7 +142,7 @@ Options:
 
 Examples:
   invokej build                    # Run build task
-  invokej deploy prod              # Run deploy with env=prod
+  invj deploy prod                 # Run deploy with env=prod (short form)
   invokej test --coverage true     # Run test with coverage
 ```
 
@@ -212,7 +218,7 @@ export class Tasks {
 
 ## Requirements
 
-- Node.js 16+ or Bun 1.0+
+- Node.js 16+ (Bun recommended for best performance)
 - Works on macOS, Linux, and Windows
 
 ## Contributing
@@ -227,10 +233,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 This project is inspired by [Python Invoke](https://www.pyinvoke.org/) and aims to provide similar functionality for JavaScript/TypeScript projects.
 
-## Apology
-
-This project was made with ChatGPT and ClaudeAI.
-
 ## Acknowledgments
 
 - Special thanks to the developers of Python Invoke for their inspiration and guidance.
+- This project was developed with assistance from AI tools (ChatGPT and Claude).
