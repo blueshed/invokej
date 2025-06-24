@@ -49,7 +49,7 @@ if (argv.includes("-l") || argv.includes("--list")) {
 }
 
 if (argv.includes("--version")) {
-  console.log(`Version 0.1.3`);
+  console.log(`Version 0.1.4`);
   process.exit(0);
 }
 
@@ -88,7 +88,7 @@ function printTaskList(instance) {
 
 function printHelp(instance) {
   console.log(
-    `invokej — JavaScript task runner inspired by Python Invoke — version 0.1.3\n`,
+    `invokej — JavaScript task runner inspired by Python Invoke — version 0.1.4\n`,
   );
 
   if (classDoc) {
@@ -119,28 +119,97 @@ function printHelp(instance) {
 function loadTaskDocs(filePath) {
   const source = readFileSync(filePath, "utf-8");
 
-  // Match class comment: /** comment */ export class Tasks
-  const classRegex = /\/\*\*(.*?)\*\/\s*export\s+class\s+Tasks/s;
-  const classMatch = classRegex.exec(source);
-  const classDoc = classMatch
-    ? classMatch[1].replace(/^\s*\*?\s?/gm, "").trim()
-    : null;
+  // Find the Tasks class and extract content between its curly braces
+  const tasksClassStart = source.indexOf("export class Tasks");
+  let classDoc = null;
 
-  // Match method comments, but exclude the class comment by starting search after class declaration
-  const classEnd = source.indexOf("export class Tasks");
-  const methodSource = classEnd >= 0 ? source.substring(classEnd) : source;
+  // Walk backwards from "export class Tasks" to find class comment
+  if (tasksClassStart !== -1) {
+    let foundComment = false;
 
-  // Match: /** comment */ methodName(...) or /** comment */ async methodName(...)
-  const regex = /\/\*\*(.*?)\*\/\s*(?:async\s+)?(\w+)\s*\(/gs;
+    // Walk backwards character by character
+    for (let i = tasksClassStart - 1; i >= 0; i--) {
+      const char = source[i];
 
+      // If we hit a closing brace, there's no class comment
+      if (char === "}") {
+        break;
+      }
+
+      // Look for the end of a JSDoc comment */
+      if (char === "/" && i > 0 && source[i - 1] === "*") {
+        // Found end of comment, now find the start
+        let commentEnd = i + 1;
+        let commentStart = -1;
+
+        // Walk backwards to find /**
+        for (let j = i - 1; j >= 1; j--) {
+          if (
+            source[j] === "*" &&
+            source[j - 1] === "/" &&
+            source[j + 1] === "*"
+          ) {
+            commentStart = j - 1;
+            break;
+          }
+        }
+
+        if (commentStart !== -1) {
+          const commentContent = source.substring(
+            commentStart + 3,
+            commentEnd - 2,
+          );
+          classDoc = commentContent
+            .replace(/^\s*\*/gm, "") // Remove leading * from each line
+            .replace(/^\s+/gm, "") // Remove leading whitespace
+            .trim();
+          foundComment = true;
+        }
+        break;
+      }
+    }
+  }
+
+  if (tasksClassStart === -1) {
+    return { taskDocs: {}, classDoc };
+  }
+
+  // Find the opening brace of the Tasks class
+  const openBraceIndex = source.indexOf("{", tasksClassStart);
+  if (openBraceIndex === -1) {
+    return { taskDocs: {}, classDoc };
+  }
+
+  // Find the matching closing brace
+  let braceCount = 0;
+  let closeBraceIndex = openBraceIndex;
+
+  for (let i = openBraceIndex; i < source.length; i++) {
+    if (source[i] === "{") braceCount++;
+    if (source[i] === "}") {
+      braceCount--;
+      if (braceCount === 0) {
+        closeBraceIndex = i;
+        break;
+      }
+    }
+  }
+
+  // Extract only the content inside the Tasks class
+  const tasksClassContent = source.substring(
+    openBraceIndex + 1,
+    closeBraceIndex,
+  );
+
+  // Find method comments within the Tasks class content
+  const methodRegex = /\/\*\*(.*?)\*\/\s*(?:async\s+)?(\w+)\s*\(/gs;
   const docs = {};
   let match;
 
-  while ((match = regex.exec(methodSource)) !== null) {
-    const [, comment, name] = match;
-    // Skip constructor and class name
-    if (name !== "constructor" && name !== "Tasks") {
-      docs[name] = comment.replace(/^\s*\*?\s?/gm, "").trim();
+  while ((match = methodRegex.exec(tasksClassContent)) !== null) {
+    const [, comment, methodName] = match;
+    if (methodName !== "constructor") {
+      docs[methodName] = comment.trim();
     }
   }
 
