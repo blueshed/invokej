@@ -62,7 +62,7 @@ export class Tasks {
   async deploy(c) {
     // Run commands with different options
     await c.run("npm test", { echo: true });           // Show command
-    await c.run("npm run build", { hide: true });      // Hide output  
+    await c.run("npm run build", { hide: true });      // Hide output
     await c.run("git push", { warn: true });           // Continue on failure
   }
 }
@@ -98,13 +98,13 @@ Execute a shell command with various options:
 async build(c) {
   // Basic command
   await c.run("npm install");
-  
+
   // With options
-  await c.run("npm test", { 
+  await c.run("npm test", {
     echo: true,    // Show: $ npm test
     warn: true     // Continue even if tests fail
   });
-  
+
   // Capture output
   const result = await c.run("git rev-parse HEAD", { hide: true });
   console.log(`Current commit: ${result.stdout}`);
@@ -118,7 +118,7 @@ Commands return a result object:
 ```javascript
 const result = await c.run("ls -la", { hide: true });
 console.log(result.stdout);  // Command output
-console.log(result.stderr);  // Error output  
+console.log(result.stderr);  // Error output
 console.log(result.code);    // Exit code
 console.log(result.ok);      // true if code === 0
 console.log(result.failed);  // true if code !== 0
@@ -166,10 +166,10 @@ export class Tasks {
   async deploy(c, env = "staging") {
     // Run tests first
     await this.test(c);
-    
+
     // Build
     await this.build(c);
-    
+
     // Deploy
     await c.run(`npm run deploy:${env}`, { echo: true });
     console.log(`🚀 Deployed to ${env}!`);
@@ -226,3 +226,11 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ## Inspiration
 
 This project is inspired by [Python Invoke](https://www.pyinvoke.org/) and aims to provide similar functionality for JavaScript/TypeScript projects.
+
+## Apology
+
+This project was made with ChatGPT and ClaudeAI.
+
+## Acknowledgments
+
+- Special thanks to the developers of Python Invoke for their inspiration and guidance.

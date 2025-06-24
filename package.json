@@ -31,16 +31,16 @@
     "bun",
     "javascript"
   ],
-  "author": "Your Name <your.email@example.com>",
+  "author": "Peter Bunyan <pete@blueshed.co.uk>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/invokej.git"
+    "url": "https://github.com/blueshed/invokej.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/invokej/issues"
+    "url": "https://github.com/blueshed/invokej/issues"
   },
-  "homepage": "https://github.com/yourusername/invokej#readme",
+  "homepage": "https://github.com/blueshed/invokej#readme",
   "engines": {
     "node": ">=16.0.0"
   },
