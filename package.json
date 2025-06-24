@@ -1,0 +1,54 @@
+{
+  "name": "invokej",
+  "version": "0.1.0",
+  "description": "A JavaScript/Bun implementation inspired by Python's Invoke - task execution and shell command management",
+  "main": "dist/invokej",
+  "type": "module",
+  "bin": {
+    "invokej": "./dist/invokej",
+    "inv": "./dist/invokej"
+  },
+  "files": [
+    "dist/invokej",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "bun build cli.js --compile --outfile dist/invokej",
+    "test": "bun test",
+    "prepublishOnly": "bun run build",
+    "dev": "bun cli.js",
+    "example": "bun dist/invokej --list"
+  },
+  "keywords": [
+    "invoke",
+    "tasks",
+    "cli",
+    "shell",
+    "automation",
+    "build-tool",
+    "task-runner",
+    "bun",
+    "javascript"
+  ],
+  "author": "Your Name <your.email@example.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/invokej.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/invokej/issues"
+  },
+  "homepage": "https://github.com/yourusername/invokej#readme",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "peerDependencies": {
+    "bun": ">=1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "bun-types": "^1.0.0"
+  }
+}
