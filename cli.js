@@ -4,8 +4,28 @@ import { readFileSync } from "fs";
 import path from "path";
 import { Context } from "./context.js";
 
-const tasksPath = "./tasks.js";
-let { Tasks } = await import(tasksPath);
+const tasksPath = path.resolve(process.cwd(), "tasks.js");
+
+let Tasks;
+try {
+  ({ Tasks } = await import(tasksPath));
+} catch (err) {
+  if (err.code === "ENOENT" || err.message.includes("Cannot find module")) {
+    console.error("ERROR: No tasks.js file found in current directory");
+    console.error("Please create a tasks.js file with your task definitions.");
+    console.error("\nExample tasks.js:");
+    console.error(`
+export class Tasks {
+  /** Example task */
+  async hello(c) {
+    await c.run("echo 'Hello from invokej!'");
+  }
+}
+`);
+    process.exit(1);
+  }
+  throw err;
+}
 
 if (!Tasks) {
   console.error("ERROR: No Tasks class exported from tasks.js");
