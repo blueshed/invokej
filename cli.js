@@ -3,6 +3,7 @@
 import { readFileSync } from "fs";
 import path from "path";
 import { Context } from "./context.js";
+import pkg from "./package.json";
 
 const tasksPath = path.resolve(process.cwd(), "tasks.js");
 
@@ -49,7 +50,7 @@ if (argv.includes("-l") || argv.includes("--list")) {
 }
 
 if (argv.includes("--version")) {
-  console.log(`Version 0.1.5`);
+  console.log(`Version ${pkg.version}`);
   process.exit(0);
 }
 
@@ -65,6 +66,13 @@ if (typeof fn !== "function") {
 // Check if method is private (starts with underscore)
 if (subcommand.startsWith("_")) {
   console.error(`Cannot call private method "${subcommand}"\n`);
+  printTaskList(instance);
+  process.exit(1);
+}
+
+// Check if trying to call constructor
+if (subcommand === "constructor") {
+  console.error(`Cannot call constructor method "${subcommand}"\n`);
   printTaskList(instance);
   process.exit(1);
 }
@@ -100,7 +108,7 @@ function printTaskList(instance) {
 
 function printHelp(instance) {
   console.log(
-    `invokej — JavaScript task runner inspired by Python Invoke — version 0.1.5\n`,
+    `invokej — JavaScript task runner inspired by Python Invoke — version ${pkg.version}\n`,
   );
 
   if (classDoc) {
