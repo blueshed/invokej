@@ -4,14 +4,20 @@ A JavaScript/Bun implementation inspired by Python's [Invoke](https://www.pyinvo
 
 ## Installation
 
+**Requires Bun to be installed first:**
+
 ```bash
-npm install -g invokej
+# Install Bun first (if not already installed)
+curl -fsSL https://bun.sh/install | bash
+
+# Then install invokej
+bun install -g invokej
 ```
 
-Or use with npx:
+Or use with bunx:
 
 ```bash
-npx invokej --help
+bunx invokej --help
 ```
 
 ## Quick Start
@@ -218,8 +224,9 @@ export class Tasks {
 
 ## Requirements
 
-- Node.js 16+ (Bun recommended for best performance)
+- **Bun 1.0+** (required)
 - Works on macOS, Linux, and Windows
+- Node.js not required
 
 ## Contributing
 

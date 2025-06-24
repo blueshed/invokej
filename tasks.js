@@ -108,4 +108,11 @@ export class Tasks {
 
     console.log("Demo complete!");
   }
+
+  /** Show current working directory (sync method test) */
+  info(c) {
+    console.log(`Current directory: ${process.cwd()}`);
+    console.log(`Node version: ${process.version}`);
+    console.log("This is a synchronous task (no async keyword)");
+  }
 }

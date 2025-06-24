@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 
 import { readFileSync } from "fs";
 import path from "path";
@@ -79,8 +79,8 @@ function printHelp(instance) {
 function loadTaskDocs(filePath) {
   const source = readFileSync(filePath, "utf-8");
 
-  // Match: /** comment */ methodName(...)
-  const regex = /\/\*\*(.*?)\*\/\s*(\w+)\s*\(/gs;
+  // Match: /** comment */ methodName(...) or /** comment */ async methodName(...)
+  const regex = /\/\*\*(.*?)\*\/\s*(?:async\s+)?(\w+)\s*\(/gs;
 
   const docs = {};
   let match;
