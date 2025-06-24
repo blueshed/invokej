@@ -102,7 +102,8 @@ function printTaskList(instance) {
 
   for (const m of methods) {
     const doc = taskDocs[m] ?? "";
-    console.log(`  ${m}${doc ? " — " + doc : ""}`);
+    const signature = getMethodSignature(instance[m]);
+    console.log(`  ${signature}${doc ? " — " + doc : ""}`);
   }
 }
 
@@ -128,7 +129,8 @@ function printHelp(instance) {
 
   for (const m of methods) {
     const doc = taskDocs[m] ?? "";
-    console.log(`  ${m}${doc ? " — " + doc : ""}`);
+    const signature = getMethodSignature(instance[m]);
+    console.log(`  ${signature}${doc ? " — " + doc : ""}`);
   }
 
   console.log(`\nUsage:`);
@@ -239,4 +241,60 @@ function loadTaskDocs(filePath) {
   }
 
   return { taskDocs: docs, classDoc };
+}
+
+function getMethodSignature(fn) {
+  const fnString = fn.toString();
+
+  // Extract function name and parameters, handling multiline functions
+  const match = fnString.match(/(?:async\s+)?(\w+)\s*\(([\s\S]*?)\)\s*{/);
+  if (!match) return fn.name || "unknown";
+
+  const [, name, params] = match;
+
+  if (!params.trim()) {
+    return name + "()";
+  }
+
+  // Clean up whitespace and newlines in parameters
+  const cleanParams = params.replace(/\s+/g, " ").trim();
+
+  // Parse parameters, handling defaults and destructuring
+  const paramList = cleanParams
+    .split(",")
+    .map((param) => {
+      const trimmed = param.trim();
+
+      // Handle destructuring - simplify the display
+      if (trimmed.startsWith("{")) {
+        const destructured = trimmed.match(/^\{([^}]*)\}/);
+        if (destructured) {
+          const fields = destructured[1]
+            .split(",")
+            .map((field) => field.trim().split("=")[0].trim())
+            .join(", ");
+          const defaultPart = trimmed.includes("=") ? " = {}" : "";
+          return `{${fields}}${defaultPart}`;
+        }
+      }
+
+      // Handle array destructuring
+      if (trimmed.startsWith("[")) {
+        return (
+          trimmed.split("=")[0].trim() + (trimmed.includes("=") ? " = []" : "")
+        );
+      }
+
+      // Handle rest parameters
+      if (trimmed.startsWith("...")) {
+        return trimmed;
+      }
+
+      // Handle regular parameters with defaults
+      return trimmed;
+    })
+    .slice(1) // Remove first parameter (context 'c')
+    .join(", ");
+
+  return `${name}(${paramList})`;
 }
