@@ -277,6 +277,86 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 This project is inspired by [Python Invoke](https://www.pyinvoke.org/) and aims to provide similar functionality for JavaScript/TypeScript projects.
 
+## Plugin System
+
+invokej supports a plugin system that allows you to extend functionality with reusable MCP.local utilities. Plugins provide core functionality that can be easily integrated into your tasks.js by AI assistants.
+
+### Plugin Pattern
+
+1. **Plugin Structure**: Plugins are JavaScript classes that provide specific functionality (database operations, API integrations, etc.)
+2. **AI Integration**: Ask your AI assistant to integrate plugin functionality into your `tasks.js`
+3. **Task Wrapping**: The AI creates wrapper methods in your Tasks class that use the plugin's API
+4. **CLI Access**: Once integrated, you can use the functionality via `invokej` commands
+
+### Available Plugins
+
+#### Todo Manager (`plugins/todo_mgr.js`)
+A SQLite-based todo management system with full CRUD operations, priority levels, due dates, and search functionality.
+
+**Core Features:**
+- Create, read, update, delete todos
+- Priority levels (1-5)
+- Due date tracking with overdue detection
+- Search and filtering
+- Statistics and reporting
+- SQLite database with proper indexing
+
+**Example AI Integration Request:**
+```
+"Add todo management functionality to my tasks.js using the todo_mgr plugin"
+```
+
+**Resulting CLI Usage:**
+```bash
+invj add-todo "Review project proposal" "Need to finish by Friday" 2 "2024-01-15"
+invj list-todos pending priority
+invj complete-todo 5
+invj search-todos "meeting"
+invj todo-stats
+invj clear-completed
+```
+
+### Using Plugins
+
+1. **Browse Available Plugins**: Check the `plugins/` directory for available utilities
+2. **Request Integration**: Ask your AI assistant to integrate specific plugin functionality
+3. **Customize Integration**: The AI will create task methods tailored to your workflow
+4. **Use Via CLI**: Access the functionality through standard `invokej` commands
+
+### Plugin Benefits
+
+- **Modular**: Each plugin focuses on a specific domain
+- **Reusable**: Same plugin can be integrated differently by different users
+- **AI-Friendly**: Well-documented APIs that AI can easily understand and integrate
+- **Extensible**: Easy to add new plugins for different functionalities
+- **Persistent**: Database-backed plugins maintain state between runs
+
+### Creating Custom Plugins
+
+You can ask your AI assistant to create custom plugins for specific functionality you need:
+
+```
+"Create a plugin for managing Git repositories with methods to clone, commit, push, and check status"
+```
+
+Plugins should export classes with clear, well-documented APIs. Follow the pattern established by existing plugins:
+
+```javascript
+// plugins/my_plugin.js
+export class MyUtility {
+  constructor(config = {}) {
+    // Initialize your utility
+  }
+
+  // Provide clear, focused methods
+  async doSomething(param1, param2) {
+    // Implementation
+  }
+}
+```
+
+The AI will then create appropriate wrapper methods in your Tasks class that use your plugin's functionality.
+
 ## Acknowledgments
 
 - Special thanks to the developers of Python Invoke for their inspiration and guidance.
