@@ -1,0 +1,67 @@
+## Todo Management System
+
+### Core Architecture
+- Task management via `invokej` (invj) with Bun SQLite backend
+- Database: `todos.db` (auto-created)
+- Priority system: 1★ (urgent) to 5★ (future)
+- Task implementation: `tasks.js`
+
+### Installation
+- Install globally: `bun install -g invokej`
+- Provides `invj` command alias for task operations
+
+### Essential Commands
+```bash
+# Task operations
+invj add "Title" "Description" priority "YYYY-MM-DD"
+invj list [pending|completed] [priority|date|created|updated]
+invj complete <id>
+invj show <id>
+invj update <id> <field> <value>
+invj delete <id>
+invj search "keyword"
+invj stats
+
+# Bulk operations
+invj bulk <filename>           # Execute bulk commands
+invj bulk_create <filename>    # Create template
+invj bulk_export <filename>    # Export for backup
+invj bulk_cleanup             # Clean temp files
+```
+
+### Priority System
+- **1★**: Urgent (blocking issues, critical bugs)
+- **2★**: High (core functionality, security fixes)
+- **3★**: Medium (features, performance improvements)
+- **4★**: Advanced (complex features, tools)
+- **5★**: Future (community features, long-term)
+
+### Database Schema
+```sql
+todos table:
+- id (PRIMARY KEY)
+- title (TEXT, required)
+- description (TEXT)
+- completed (BOOLEAN, default false)
+- priority (INTEGER 1-5, default 3)
+- due_date (TEXT, ISO format YYYY-MM-DD)
+- created_at (TEXT, auto-timestamp)
+- updated_at (TEXT, auto-updated)
+```
+
+### File Structure
+- `tasks.js` - Task definitions and database logic
+- `todos.db` - SQLite database (auto-created)
+- `*bulk*.txt` - Temporary bulk operation files
+
+### Technical Notes
+- Built with Bun's native SQLite support
+- Uses invokej 0.1.2+ for task runner functionality
+- Prepared statements prevent SQL injection
+- Indexed on: completed, priority, due_date
+- Bulk operations use transactions for consistency
+
+### Status
+✅ System fully operational
+✅ All legacy TODO.md files migrated to database
+✅ Complete CRUD functionality implemented
