@@ -53,9 +53,10 @@ export class Tasks {
   }
 
   /** Show complete project with tasks, dependencies, and context */
-  async project_show(c, projectId = "") {
+  async project_show(c, projectId = "", format = "summary") {
     if (!projectId) {
-      console.log("Usage: invokej project_show <project_id>");
+      console.log("Usage: invokej project_show <project_id> [format]");
+      console.log("  format: summary (default) | json");
       return;
     }
 
@@ -67,6 +68,13 @@ export class Tasks {
       return;
     }
 
+    // JSON format - output everything
+    if (format === "json") {
+      console.log(JSON.stringify(project, null, 2));
+      return;
+    }
+
+    // Summary format (default)
     console.log(`📊 Project: ${project.name}`);
     console.log(
       "────────────────────────────────────────────────────────────────────────────────",
