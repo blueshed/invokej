@@ -1,0 +1,121 @@
+# Work Sample Rules - InvokeJ Environment
+
+## Core Mindset
+This is a learning system that accumulates project intelligence through task execution.
+Each invokej command should build on previous knowledge.
+
+## Essential InvokeJ Workflow
+
+### Starting a New Project
+```
+invokej project_save "My Learning Project"
+invokej project_show 1
+```
+
+### Daily Work Pattern
+```
+# Check what's ready to work on
+invokej work_ready
+
+# Before starting task 5, capture assumptions
+invokej work_context_save 1 "I assume the API will return JSON format" pre assumption 6 5
+
+# Complete the work
+invokej work_complete 5
+
+# Capture what you learned
+invokej work_context_save 1 "API actually returns XML, need parser" post discovery 8 5
+
+# Link the learning
+invokej work_context_relate 2 1 supersedes
+```
+
+### Creating Intelligent Task Chains
+```
+# Create dependent tasks that build knowledge
+invokej task_save 1 "Research authentication methods"
+invokej task_save 1 "Implement chosen auth method"
+invokej task_save 1 "Test auth integration"
+
+# Set real dependencies (not just sequence)
+invokej work_dependency 2 1  # implementation depends on research
+invokej work_dependency 3 2  # testing depends on implementation
+```
+
+## Context Capture Strategy
+
+### Before Each Task (pre)
+```
+invokej work_context_save <project_id> "<what you assume>" pre assumption <importance> <task_id>
+```
+
+### During Execution (during)
+```
+invokej work_context_save <project_id> "<what surprised you>" during discovery <importance> <task_id>
+```
+
+### After Completion (post)
+```
+invokej work_context_save <project_id> "<what you now know>" post rule <importance> <task_id>
+```
+
+## Knowledge Types & When to Use
+
+**assumption** (pre-work): What you believe before starting
+**discovery** (during): What you found that was unexpected
+**constraint** (any): What limits your options
+**pattern** (post): What you observed happening repeatedly
+**rule** (post): What you established as reliable guidance
+**insight** (post): What changes your entire approach
+
+## Importance Scoring (1-10)
+- 1-5: Context for similar future tasks
+- 6-8: Changes project approach significantly
+- 9-10: Transforms entire project understanding
+
+## Success Patterns
+
+### Good InvokeJ Usage
+```
+# Always check project intelligence before starting
+invokej project_show 1
+
+# Work only on ready tasks
+invokej work_ready 1
+
+# Capture learning at each stage
+invokej work_context_save 1 "Assumption: users want dark mode" pre assumption 5 3
+invokej work_complete 3
+invokej work_context_save 1 "Discovery: 80% prefer light mode" post discovery 9 3
+invokej work_context_relate 2 1 contradicts
+```
+
+### Warning Signs
+- Completing tasks without `work_context_save`
+- Using `work_dependency` for sequence rather than real constraints
+- Never using `project_show` to review accumulated knowledge
+- All context items have same importance level
+
+## Quick Reference Commands
+
+```
+# Project management
+invokej project_save "<name>" [id]
+invokej project_list
+invokej project_show <id>
+
+# Task management
+invokej task_save <project_id> "<name>" [due_date] [id]
+invokej work_ready [project_id]
+invokej work_complete <task_id>
+invokej work_dependency <task_id> <depends_on_id>
+
+# Knowledge management
+invokej work_context_save <project_id> "<content>" [stage] [type] [importance] [task_id] [id]
+invokej work_context_relate <source_id> <target_id> <relationship_type>
+```
+
+## The Learning Loop Goal
+When you run `invokej work_ready`, you should already know the relevant lessons from previous similar work. If you're starting from scratch each time, capture more context.
+
+Projects should get progressively smarter through their own execution history.
