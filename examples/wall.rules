@@ -1,0 +1,206 @@
+# Development Workflow Rules - Wall + Git Integration
+
+## Core Principle
+The Wall tracks your development journey (decisions, progress, lessons), while Git tracks your code changes. Use them together to maintain both code history and development context.
+
+## When Starting Work
+
+1. **Always start with a session check**
+   - Run `invj wall:session` to see where you left off
+   - This prevents context loss and redundant work
+
+2. **Create feature branch AFTER setting focus**
+   - First: `invj wall:focus "What you're building"`
+   - Then: `invj git:feature feature-name`
+   - This ensures your intent is captured before coding
+
+## During Development
+
+### Track in Wall:
+- **Decisions**: `invj wall:decide "Choice" "Reasoning"` - BEFORE implementing
+- **Current Work**: `invj wall:edge "Component" "status"` - WHILE building
+- **Failures**: `invj wall:fail "What" "How" "Why" "Lesson"` - IMMEDIATELY after failure
+- **Completions**: `invj wall:add "Component" "Description"` - AFTER tests pass
+
+### Track in Git:
+- **Code Changes**: Commit when a logical unit of work is complete
+- **Work in Progress**: Use WIP commits for incomplete work at session end
+
+### Synchronization Rules:
+1. **Wall before Commit**: Update wall context before committing code
+2. **Commit after Wall:add**: When you add to wall, commit the related code
+3. **Session End**: Update focus with next steps before stopping
+
+## Decision Tracking
+
+### Architectural Decisions (wall:decide)
+Track decisions that affect the project structure:
+- Database choices
+- Framework selections
+- API design patterns
+- Security approaches
+- Performance trade-offs
+
+Format: `invj wall:decide "Decision" "Rationale" "Constraints"`
+
+### Implementation Details (git commit)
+Track specific code implementations:
+- Function implementations
+- Bug fixes
+- Refactoring
+- Feature additions
+
+## Failure and Learning
+
+**Always record failures in the wall:**
+```bash
+invj wall:fail "Component" "Approach" "Why it failed" "Lesson learned"
+```
+
+This creates a knowledge base preventing repeated mistakes.
+
+## Workflow Patterns
+
+### Feature Development Pattern
+```bash
+# 1. Start session
+invj wall:session
+
+# 2. Set focus
+invj wall:focus "Building user authentication"
+
+# 3. Create branch
+invj git:feature user-auth
+
+# 4. Make architectural decision
+invj wall:decide "Use JWT tokens" "Stateless, scalable" "Need refresh token mechanism"
+
+# 5. Set current edge
+invj wall:edge "JWT middleware" "building"
+
+# 6. Work and test
+invj test
+
+# 7. Handle failures
+invj wall:fail "Token validation" "Sync verification" "Too slow" "Use async validation"
+
+# 8. Complete component
+invj wall:add "JWT middleware" "Async validation with refresh tokens"
+
+# 9. Commit code
+git commit -m "Add JWT authentication middleware"
+
+# 10. Update focus for next session
+invj wall:focus "User authentication" "JWT middleware complete" "Add OAuth2 providers"
+```
+
+### Debug Pattern
+```bash
+# 1. Record the issue
+invj wall:edge "Bug: Memory leak in websocket handler" "blocked"
+
+# 2. Track attempts
+invj wall:fail "Manual cleanup" "clearInterval in disconnect" "Still leaking" "Event listeners also need cleanup"
+
+# 3. Record solution
+invj wall:add "Memory leak fix" "Cleanup all listeners and timers on disconnect"
+
+# 4. Commit fix
+git commit -m "Fix memory leak in websocket handler"
+```
+
+### Refactoring Pattern
+```bash
+# 1. Record decision
+invj wall:decide "Refactor to microservices" "Scale independently" "Team boundaries"
+
+# 2. Track progress
+invj wall:edge "Extract auth service" "building"
+
+# 3. Complete
+invj wall:add "Auth service" "Extracted from monolith"
+```
+
+## Context Preservation Rules
+
+### Daily Development
+1. **Start**: Run `invj wall:session` first thing
+2. **Context Switches**: Update `wall:focus` when switching tasks
+3. **End**: Set next steps in focus before stopping
+
+### After Breaks (Weekend/Vacation)
+1. Review: `invj wall:show` and `invj wall:foundation`
+2. Check: `invj wall:rubble 5` for recent lessons
+3. Resume: `invj wall:session`
+
+### Team Handoffs
+Before handoff, ensure:
+- Wall is updated with current edge
+- Recent decisions are documented
+- Any blockers are noted in edge
+- Next steps are clear in focus
+
+## What Goes Where
+
+### Wall (Persistent Context)
+- WHY: Decisions, rationale, constraints
+- WHAT: Components, architecture, progress
+- LEARNED: Failures, lessons, patterns
+- NOW: Current focus, blockers, next steps
+
+### Git (Code History)
+- WHAT: Code changes
+- WHEN: Timestamps
+- WHO: Author information
+- HOW: Implementation details
+
+### Combined Power
+Together they tell the complete story:
+- Git: "This code was added"
+- Wall: "Because we decided X for reason Y after failing with Z"
+
+## AI Assistant Integration
+
+When working with AI assistants:
+1. Start by sharing `invj wall:session` output
+2. Include relevant `invj wall:foundation` decisions
+3. Share recent `invj wall:rubble` to avoid repeated failures
+4. Update wall after AI-assisted work completes
+
+## Anti-Patterns to Avoid
+
+❌ **Don't**: Commit code without updating wall context
+❌ **Don't**: Make architectural decisions without wall:decide
+❌ **Don't**: Leave failures undocumented
+❌ **Don't**: Start coding without checking wall:session
+❌ **Don't**: End work without updating focus
+
+## Quick Reference
+
+| Action | Wall Command | Git Command | When |
+|--------|-------------|-------------|------|
+| Start work | `wall:session` | `git status` | Every session |
+| New feature | `wall:focus` | `git:feature` | Starting features |
+| Design choice | `wall:decide` | - | Before implementing |
+| Working on | `wall:edge` | - | During coding |
+| Tests pass | `wall:add` | `git commit` | Component complete |
+| Something failed | `wall:fail` | - | After failure |
+| View progress | `wall:show` | `git log` | Review progress |
+| See lessons | `wall:rubble` | - | Before similar work |
+
+## Example .gitignore Addition
+
+```
+.invokej/context.db
+.invokej/context.db-journal
+```
+
+Don't commit the wall database - it's personal/team context, not code.
+
+## Summary
+
+The Wall is your development memory and learning system. Git is your code history.
+Together, they create a complete record of not just what changed, but why it changed,
+what was learned, and what's next.
+
+Remember: **Context is as valuable as code.**
