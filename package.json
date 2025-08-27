@@ -1,6 +1,6 @@
 {
   "name": "invokej",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "A JavaScript/Bun implementation inspired by Python's Invoke - task execution and shell command management",
   "main": "cli.js",
   "type": "module",
