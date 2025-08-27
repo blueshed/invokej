@@ -111,6 +111,43 @@ export class Tasks {
 
 Private methods are automatically filtered from help output and CLI execution.
 
+### 📁 **Namespaces (v0.3.0+)**
+Organize related tasks into namespaces for better organization:
+
+```javascript
+export class Tasks {
+  constructor() {
+    // Initialize namespace objects
+    this.db = new DbNamespace();
+    this.git = new GitNamespace();
+  }
+  
+  // Root-level task
+  async build(c) {
+    await c.run("npm run build");
+  }
+}
+
+class DbNamespace {
+  /** Run migrations */
+  async migrate(c, direction = "up") {
+    await c.run(`npm run db:migrate:${direction}`);
+  }
+  
+  /** Seed database */
+  async seed(c) {
+    await c.run("npm run db:seed");
+  }
+}
+```
+
+Use namespaced tasks with colon notation:
+```bash
+invokej build           # Root task
+invokej db:migrate      # Namespaced task
+invokej db:seed         # Namespaced task
+```
+
 ## Context API
 
 The context object (`c`) provides methods for executing shell commands:
@@ -158,8 +195,10 @@ console.log(result.failed);  // true if code !== 0
 
 ```bash
 invokej [options] <task> [task-args...]
+invokej [options] <namespace>:<task> [task-args...]
 # or
 invj [options] <task> [task-args...]
+invj [options] <namespace>:<task> [task-args...]
 
 Options:
   -l, --list     List available tasks
@@ -167,83 +206,79 @@ Options:
   --version      Show version
 
 Examples:
-  invokej build                    # Run build task
-  invj deploy prod                 # Run deploy with env=prod (short form)
-  invokej test --coverage true     # Run test with coverage
+  invokej build                    # Run root task
+  invj deploy prod                 # Run root task with args
+  invokej db:migrate               # Run namespaced task
+  invj git:feature auth            # Namespaced task with args
+  invokej wall:session             # Start development session
+
+Namespace Examples:
+  invokej wall:show                # Show project wall
+  invokej wall:add "Auth" "JWT"    # Add component to wall
+  invokej todo:list                # List todos
+  invokej db:reset                 # Reset database
 ```
 
 **Note:** Methods starting with underscore (`_methodName`) are private and cannot be called from the command line.
 
-## Task Examples
+## Examples
 
-### Build System
+invokej includes several example configurations in the `examples/` directory:
+
+### 📝 Basic Example (`examples/basic.js`)
+Simple starter template with common tasks like build, test, and deploy.
+
 ```javascript
 export class Tasks {
-  /** Install dependencies */
-  async install(c) {
-    await c.run("npm install", { echo: true });
+  /** Build the project */
+  async build(c, env = "development") {
+    console.log(`Building for ${env}...`);
+    await c.run(`NODE_ENV=${env} npm run build`, { echo: true });
   }
 
-  /** Run tests with optional coverage */
-  async test(c, coverage = "false") {
-    const cmd = coverage === "true" ? "npm run test:coverage" : "npm test";
-    await c.run(cmd, { echo: true });
-  }
-
-  /** Build for production */
-  async build(c) {
-    await this._validateEnvironment(c);
-    await c.run("npm run build", { echo: true });
-    console.log("✅ Build complete!");
-  }
-
-  /** Deploy to production */
-  async deploy(c, env = "staging") {
-    // Run tests first
-    await this.test(c);
-
-    // Build
-    await this.build(c);
-
-    // Deploy with environment validation
-    await this._checkDeploymentReadiness(c, env);
-    await c.run(`npm run deploy:${env}`, { echo: true });
-    console.log(`🚀 Deployed to ${env}!`);
-  }
-
-  /** Private: Validate build environment */
-  async _validateEnvironment(c) {
-    const result = await c.run("node --version", { hide: true });
-    console.log(`Node version: ${result.stdout.trim()}`);
-  }
-
-  /** Private: Check if ready for deployment */
-  async _checkDeploymentReadiness(c, env) {
-    if (env === "production") {
-      await c.run("npm audit --audit-level high", { echo: true });
-    }
+  /** Run tests */
+  async test(c) {
+    await c.run("npm test", { echo: true });
   }
 }
 ```
 
-### Docker Workflow
-```javascript
-export class Tasks {
-  /** Build Docker image */
-  async docker_build(c, tag = "latest") {
-    await c.run(`docker build -t myapp:${tag} .`, { echo: true });
-  }
+### ✅ Todo Plugin Example (`examples/with-todo.js`)
+Shows how to use the built-in Todo manager plugin:
 
-  /** Run Docker container */
-  async docker_run(c, port = "3000") {
-    await c.run(`docker run -p ${port}:3000 myapp:latest`, { echo: true });
-  }
+```bash
+invokej add "Review PR" "Check pull request #42" 1
+invokej list
+invokej complete 1
+invokej stats
+```
 
-  /** Push to registry */
-  async docker_push(c, tag = "latest") {
-    await c.run(`docker push myapp:${tag}`, { echo: true });
-  }
-}
+### 🧱 Wall Plugin Example (`examples/with-wall.js`)
+Demonstrates project context tracking with the Wall plugin:
+
+```bash
+invokej wall:session      # Start development session
+invokej wall:focus "Working on auth"
+invokej wall:add "User model" "Schema complete"
+invokej wall:show         # View progress
+```
+
+### 📁 Advanced Namespaces (`examples/with-namespaces.js`)
+Shows how to organize complex projects with namespaces:
+
+```bash
+invokej test              # Root task
+invokej db:migrate        # Database namespace
+invokej git:feature auth  # Git namespace
+invokej wall:session      # Wall namespace
+```
+
+To use any example, copy it to your project as `tasks.js`:
+
+```bash
+cp node_modules/invokej/examples/basic.js tasks.js
+# or for global installation
+cp ~/.bun/install/global/node_modules/invokej/examples/basic.js tasks.js
 ```
 
 ## Comparison with Python Invoke
@@ -301,27 +336,39 @@ A SQLite-based todo management system with full CRUD operations, priority levels
 - Statistics and reporting
 - SQLite database with proper indexing
 
-**Example AI Integration Request:**
-```
-"Add todo management functionality to my tasks.js using the todo_mgr plugin"
-```
-
-**Resulting CLI Usage:**
-```bash
-invj add-todo "Review project proposal" "Need to finish by Friday" 2 "2024-01-15"
-invj list-todos pending priority
-invj complete-todo 5
-invj search-todos "meeting"
-invj todo-stats
-invj clear-completed
-```
+**Quick Start:**
+See the `examples/` directory for complete working examples:
+- `examples/basic.js` - Simple starter template
+- `examples/with-todo.js` - Todo management integration
+- `examples/with-wall.js` - Project context tracking
+- `examples/with-namespaces.js` - Advanced namespace organization
 
 ### Using Plugins
 
-1. **Browse Available Plugins**: Check the `plugins/` directory for available utilities
-2. **Request Integration**: Ask your AI assistant to integrate specific plugin functionality
+1. **Import Plugins**: Simple import from `invokej/plugins` package
+2. **Request Integration**: Ask your AI assistant to integrate specific plugin functionality  
 3. **Customize Integration**: The AI will create task methods tailored to your workflow
 4. **Use Via CLI**: Access the functionality through standard `invokej` commands
+
+**Example usage:**
+```javascript
+// Import bundled plugins - works with global installation
+import { ToDoManager, TodoUI, WorkAPI, WallNamespace } from "invokej/plugins";
+
+// Using the Wall namespace for project context management
+export class Tasks {
+  constructor() {
+    this.wall = new WallNamespace();
+  }
+}
+
+// Available wall commands:
+// invokej wall:session   - Start development session
+// invokej wall:show      - Display project wall
+// invokej wall:add       - Add completed component
+// invokej wall:focus     - Set current focus
+// invokej wall:fail      - Record failure and lesson
+```
 
 ### Plugin Benefits
 

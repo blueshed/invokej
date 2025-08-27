@@ -39,6 +39,88 @@ const { taskDocs, classDoc } = loadTaskDocs(tasksPath);
 
 const argv = process.argv.slice(2);
 
+// Parse namespace:method or namespace.method notation
+function parseCommand(command) {
+  // Support both : and . as separators
+  const separators = [":", "."];
+  for (const sep of separators) {
+    if (command?.includes(sep)) {
+      const [namespace, method] = command.split(sep);
+      return { namespace, method };
+    }
+  }
+  return { namespace: null, method: command };
+}
+
+// Resolve the actual function to call
+function resolveMethod(instance, namespace, method) {
+  if (namespace) {
+    // Check if namespace exists as a property
+    const ns = instance[namespace];
+    if (ns && typeof ns === "object" && typeof ns[method] === "function") {
+      return { target: ns, fn: ns[method] };
+    }
+    // Fallback: try underscore notation for backward compatibility
+    const underscoreMethod = `${namespace}_${method}`;
+    if (typeof instance[underscoreMethod] === "function") {
+      console.warn(
+        `⚠️  Using ${underscoreMethod} - consider migrating to ${namespace}:${method} notation`,
+      );
+      return { target: instance, fn: instance[underscoreMethod] };
+    }
+    return null;
+  }
+
+  // Root-level method
+  if (typeof instance[method] === "function") {
+    return { target: instance, fn: instance[method] };
+  }
+  return null;
+}
+
+// Enhanced task discovery for namespaces
+function discoverTasks(instance) {
+  const tasks = {
+    root: [],
+    namespaced: {},
+  };
+
+  // Get root-level methods
+  const rootMethods = Object.getOwnPropertyNames(
+    Object.getPrototypeOf(instance),
+  ).filter(
+    (m) =>
+      m !== "constructor" &&
+      !m.startsWith("_") &&
+      typeof instance[m] === "function",
+  );
+
+  tasks.root = rootMethods;
+
+  // Discover namespace objects
+  for (const prop of Object.getOwnPropertyNames(instance)) {
+    const value = instance[prop];
+
+    // Check if it's a namespace object (has methods)
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      const nsMethods = Object.getOwnPropertyNames(
+        Object.getPrototypeOf(value),
+      ).filter(
+        (m) =>
+          m !== "constructor" &&
+          !m.startsWith("_") &&
+          typeof value[m] === "function",
+      );
+
+      if (nsMethods.length > 0) {
+        tasks.namespaced[prop] = nsMethods;
+      }
+    }
+  }
+
+  return tasks;
+}
+
 if (argv.includes("-h") || argv.includes("--help") || argv.length === 0) {
   printHelp(instance);
   process.exit(0);
@@ -55,30 +137,33 @@ if (argv.includes("--version")) {
 }
 
 const [subcommand, ...args] = argv;
+const { namespace, method } = parseCommand(subcommand);
 
-const fn = instance[subcommand];
-if (typeof fn !== "function") {
-  console.error(`Unknown task "${subcommand}"\n`);
+// Check for private method or constructor
+if (method?.startsWith("_")) {
+  console.error(`Cannot call private method "${method}"\n`);
   printTaskList(instance);
   process.exit(1);
 }
 
-// Check if method is private (starts with underscore)
-if (subcommand.startsWith("_")) {
-  console.error(`Cannot call private method "${subcommand}"\n`);
+if (method === "constructor") {
+  console.error(`Cannot call constructor method "${method}"\n`);
   printTaskList(instance);
   process.exit(1);
 }
 
-// Check if trying to call constructor
-if (subcommand === "constructor") {
-  console.error(`Cannot call constructor method "${subcommand}"\n`);
+const resolved = resolveMethod(instance, namespace, method);
+
+if (!resolved) {
+  console.error(
+    `Unknown ${namespace ? "namespaced " : ""}task "${subcommand}"\n`,
+  );
   printTaskList(instance);
   process.exit(1);
 }
 
 try {
-  const result = await fn.apply(instance, [context, ...args]);
+  const result = await resolved.fn.apply(resolved.target, [context, ...args]);
   if (result instanceof Promise) await result;
 } catch (err) {
   console.error(`Error running "${subcommand}":`, err.message || err);
@@ -89,22 +174,32 @@ function printTaskList(instance) {
   if (classDoc) {
     console.log(`${classDoc}\n`);
   }
+
+  const tasks = discoverTasks(instance);
+
   console.log("Available tasks:\n");
 
-  const methods = Object.getOwnPropertyNames(
-    Object.getPrototypeOf(instance),
-  ).filter(
-    (m) =>
-      m !== "constructor" &&
-      typeof instance[m] === "function" &&
-      !m.startsWith("_"),
-  );
-
-  for (const m of methods) {
-    const doc = taskDocs[m] ?? "";
-    const signature = getMethodSignature(instance[m]);
-    console.log(`  ${signature}${doc ? " — " + doc : ""}`);
+  // Root tasks
+  if (tasks.root.length > 0) {
+    tasks.root.forEach((task) => {
+      const doc = taskDocs[task] ?? "";
+      const signature = getMethodSignature(instance[task]);
+      console.log(`  ${signature}${doc ? " — " + doc : ""}`);
+    });
   }
+
+  // Namespaced tasks
+  Object.entries(tasks.namespaced).forEach(([ns, methods]) => {
+    console.log(`\n${ns}:`);
+    methods.forEach((method) => {
+      const nsObj = instance[ns];
+      const signature = getMethodSignature(nsObj[method]);
+      // Try to get docs for namespaced method
+      const doc =
+        taskDocs[`${ns}_${method}`] ?? taskDocs[`${ns}:${method}`] ?? "";
+      console.log(`  ${ns}:${signature}${doc ? " — " + doc : ""}`);
+    });
+  });
 }
 
 function printHelp(instance) {
@@ -116,28 +211,37 @@ function printHelp(instance) {
     console.log(`${classDoc}\n`);
   }
 
+  const tasks = discoverTasks(instance);
+
   console.log("Available tasks:\n");
 
-  const methods = Object.getOwnPropertyNames(
-    Object.getPrototypeOf(instance),
-  ).filter(
-    (m) =>
-      m !== "constructor" &&
-      typeof instance[m] === "function" &&
-      !m.startsWith("_"),
-  );
-
-  for (const m of methods) {
-    const doc = taskDocs[m] ?? "";
-    const signature = getMethodSignature(instance[m]);
-    console.log(`  ${signature}${doc ? " — " + doc : ""}`);
+  // Root tasks
+  if (tasks.root.length > 0) {
+    tasks.root.forEach((task) => {
+      const doc = taskDocs[task] ?? "";
+      const signature = getMethodSignature(instance[task]);
+      console.log(`  ${signature}${doc ? " — " + doc : ""}`);
+    });
   }
 
+  // Namespaced tasks
+  Object.entries(tasks.namespaced).forEach(([ns, methods]) => {
+    console.log(`\n${ns}:`);
+    methods.forEach((method) => {
+      const nsObj = instance[ns];
+      const signature = getMethodSignature(nsObj[method]);
+      const doc =
+        taskDocs[`${ns}_${method}`] ?? taskDocs[`${ns}:${method}`] ?? "";
+      console.log(`  ${ns}:${signature}${doc ? " — " + doc : ""}`);
+    });
+  });
+
   console.log(`\nUsage:`);
-  console.log(`  invokej <task> [args...]`);
-  console.log(`  invokej -l           # list tasks`);
-  console.log(`  invokej -h           # help`);
-  console.log(`  invokej --version    # show version`);
+  console.log(`  invokej <task> [args...]              # Run root task`);
+  console.log(`  invokej <namespace>:<task> [args...]  # Run namespaced task`);
+  console.log(`  invokej -l                            # List tasks`);
+  console.log(`  invokej -h                            # Show help`);
+  console.log(`  invokej --version                     # Show version`);
   console.log(
     `\nFor more information about a specific task, run it with invalid arguments to see its usage.`,
   );
