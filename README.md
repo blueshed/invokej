@@ -91,11 +91,19 @@ async deploy(c, version = "latest") {
 ### ⚡ **Lightweight Distribution**
 Small package size with fast startup and easy distribution.
 
-### 🔒 **Private Methods**
-Methods starting with underscore (`_`) are private and cannot be called from CLI:
+### 🔒 **Private Methods & Namespaces**
+Methods and namespaces starting with underscore (`_`) are private and cannot be called from CLI:
 
 ```javascript
 export class Tasks {
+  constructor() {
+    // Public namespace - visible in CLI
+    this.db = new DbNamespace();
+    
+    // Private namespace - hidden from CLI
+    this._internal = new InternalNamespace();
+  }
+
   /** Public task - visible in CLI */
   async build(c) {
     await this._validateEnvironment(c);
@@ -107,9 +115,16 @@ export class Tasks {
     // Internal validation logic
   }
 }
+
+class InternalNamespace {
+  /** This method won't be accessible via CLI */
+  async cleanup(c) {
+    // Internal cleanup logic
+  }
+}
 ```
 
-Private methods are automatically filtered from help output and CLI execution.
+Private methods and namespaces are automatically filtered from help output and CLI execution.
 
 ### 📁 **Namespaces (v0.3.0+)**
 Organize related tasks into namespaces for better organization:
@@ -219,7 +234,7 @@ Namespace Examples:
   invokej db:reset                 # Reset database
 ```
 
-**Note:** Methods starting with underscore (`_methodName`) are private and cannot be called from the command line.
+**Note:** Methods and namespaces starting with underscore (`_methodName`, `_namespace`) are private and cannot be called from the command line.
 
 ## Examples
 

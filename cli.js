@@ -55,6 +55,11 @@ function parseCommand(command) {
 // Resolve the actual function to call
 function resolveMethod(instance, namespace, method) {
   if (namespace) {
+    // Check if namespace is private
+    if (namespace.startsWith("_")) {
+      return null;
+    }
+
     // Check if namespace exists as a property
     const ns = instance[namespace];
     if (ns && typeof ns === "object" && typeof ns[method] === "function") {
@@ -101,6 +106,11 @@ function discoverTasks(instance) {
   for (const prop of Object.getOwnPropertyNames(instance)) {
     const value = instance[prop];
 
+    // Skip private namespaces
+    if (prop.startsWith("_")) {
+      continue;
+    }
+
     // Check if it's a namespace object (has methods)
     if (value && typeof value === "object" && !Array.isArray(value)) {
       const nsMethods = Object.getOwnPropertyNames(
@@ -139,7 +149,13 @@ if (argv.includes("--version")) {
 const [subcommand, ...args] = argv;
 const { namespace, method } = parseCommand(subcommand);
 
-// Check for private method or constructor
+// Check for private namespace, method, or constructor
+if (namespace?.startsWith("_")) {
+  console.error(`Cannot call private namespace "${namespace}"\n`);
+  printTaskList(instance);
+  process.exit(1);
+}
+
 if (method?.startsWith("_")) {
   console.error(`Cannot call private method "${method}"\n`);
   printTaskList(instance);
