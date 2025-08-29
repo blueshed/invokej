@@ -327,13 +327,61 @@ function loadTaskDocs(filePath) {
     return { taskDocs: {}, classDoc };
   }
 
-  // Find the matching closing brace
+  // Find the matching closing brace - need to handle strings and comments
   let braceCount = 0;
   let closeBraceIndex = openBraceIndex;
+  let inString = false;
+  let inComment = false;
+  let stringChar = null;
 
   for (let i = openBraceIndex; i < source.length; i++) {
-    if (source[i] === "{") braceCount++;
-    if (source[i] === "}") {
+    const char = source[i];
+    const nextChar = source[i + 1];
+
+    // Handle line comments
+    if (!inString && !inComment && char === "/" && nextChar === "/") {
+      // Skip to end of line
+      while (i < source.length && source[i] !== "\n") {
+        i++;
+      }
+      continue;
+    }
+
+    // Handle block comments
+    if (!inString && !inComment && char === "/" && nextChar === "*") {
+      inComment = true;
+      i++; // Skip the *
+      continue;
+    }
+
+    if (!inString && inComment && char === "*" && nextChar === "/") {
+      inComment = false;
+      i++; // Skip the /
+      continue;
+    }
+
+    // Skip everything inside comments
+    if (inComment) continue;
+
+    // Handle strings
+    if (!inString && (char === '"' || char === "'" || char === "`")) {
+      inString = true;
+      stringChar = char;
+      continue;
+    }
+
+    if (inString && char === stringChar && source[i - 1] !== "\\") {
+      inString = false;
+      stringChar = null;
+      continue;
+    }
+
+    // Skip everything inside strings
+    if (inString) continue;
+
+    // Count braces only outside strings and comments
+    if (char === "{") braceCount++;
+    if (char === "}") {
       braceCount--;
       if (braceCount === 0) {
         closeBraceIndex = i;
@@ -349,14 +397,20 @@ function loadTaskDocs(filePath) {
   );
 
   // Find method comments within the Tasks class content
-  const methodRegex = /\/\*\*(.*?)\*\/\s*(?:async\s+)?(\w+)\s*\(/gs;
+  const methodRegex = /\/\*\*([\s\S]*?)\*\/\s*(?:async\s+)?(\w+)\s*\(/g;
   const docs = {};
   let match;
 
   while ((match = methodRegex.exec(tasksClassContent)) !== null) {
-    const [, comment, methodName] = match;
+    const [fullMatch, comment, methodName] = match;
     if (methodName !== "constructor" && !methodName.startsWith("_")) {
-      docs[methodName] = comment.trim();
+      // Extract just the first line of the comment for the description
+      const lines = comment
+        .split("\n")
+        .map((line) => line.replace(/^\s*\*\s?/, "").trim())
+        .filter((line) => line && !line.startsWith("@"));
+
+      docs[methodName] = lines[0] || "";
     }
   }
 
