@@ -20,6 +20,23 @@ Or use with bunx:
 bunx invokej --help
 ```
 
+### Development Installation
+
+When developing or testing invokej locally, you can link your local version globally:
+
+```bash
+# In your invokej directory
+bun link
+
+# Now your local version is available globally as 'invj' and 'invokej'
+invj --list
+```
+
+This is useful for:
+- Testing changes before publishing
+- Developing custom modifications
+- Contributing to invokej development
+
 ## Quick Start
 
 1. Create a `tasks.js` file in your project root:
@@ -318,6 +335,38 @@ cp ~/.bun/install/global/node_modules/invokej/examples/basic.js tasks.js
 ## Contributing
 
 Contributions welcome! This project aims to bring the simplicity and power of Python's Invoke to the JavaScript ecosystem.
+
+### Development Setup
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/invokej.git
+cd invokej
+```
+
+2. Install dependencies:
+```bash
+bun install
+```
+
+3. Link your local version for testing:
+```bash
+bun link
+```
+
+4. Test your changes:
+```bash
+# Run tests
+bun test
+
+# Test CLI with your local version
+invj --list
+```
+
+5. Unlink when done:
+```bash
+bun unlink
+```
 
 ## License
 

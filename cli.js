@@ -90,17 +90,25 @@ function discoverTasks(instance) {
     namespaced: {},
   };
 
-  // Get root-level methods
-  const rootMethods = Object.getOwnPropertyNames(
-    Object.getPrototypeOf(instance),
-  ).filter(
-    (m) =>
-      m !== "constructor" &&
-      !m.startsWith("_") &&
-      typeof instance[m] === "function",
-  );
+  // Get root-level methods including inherited ones
+  const rootMethods = new Set();
+  let proto = Object.getPrototypeOf(instance);
 
-  tasks.root = rootMethods;
+  // Walk up the prototype chain until we hit Object.prototype
+  while (proto && proto !== Object.prototype) {
+    Object.getOwnPropertyNames(proto).forEach((name) => {
+      if (
+        name !== "constructor" &&
+        !name.startsWith("_") &&
+        typeof instance[name] === "function"
+      ) {
+        rootMethods.add(name);
+      }
+    });
+    proto = Object.getPrototypeOf(proto);
+  }
+
+  tasks.root = Array.from(rootMethods);
 
   // Discover namespace objects
   for (const prop of Object.getOwnPropertyNames(instance)) {
@@ -265,10 +273,41 @@ function printHelp(instance) {
 
 function loadTaskDocs(filePath) {
   const source = readFileSync(filePath, "utf-8");
+  const allDocs = {};
+  let classDoc = null;
+
+  // Check if Tasks extends another class
+  const extendsMatch = source.match(/export\s+class\s+Tasks\s+extends\s+(\w+)/);
+  if (extendsMatch) {
+    // Try to find the import statement for the parent class
+    const parentClassName = extendsMatch[1];
+    const importMatch = source.match(
+      new RegExp(
+        `import\\s+(?:{[^}]*${parentClassName}[^}]*}|${parentClassName})\\s+from\\s+["']([^"']+)["']`,
+      ),
+    );
+
+    if (importMatch) {
+      const importPath = importMatch[1];
+      // Resolve relative imports
+      if (importPath.startsWith(".")) {
+        const baseDir = path.dirname(filePath);
+        const parentPath = path.resolve(baseDir, importPath);
+
+        try {
+          const parentSource = readFileSync(parentPath, "utf-8");
+          // Extract methods from parent class
+          const parentDocs = extractMethodDocs(parentSource);
+          Object.assign(allDocs, parentDocs);
+        } catch (err) {
+          // Parent file not found or not readable, continue without parent docs
+        }
+      }
+    }
+  }
 
   // Find the Tasks class and extract content between its curly braces
   const tasksClassStart = source.indexOf("export class Tasks");
-  let classDoc = null;
 
   // Walk backwards from "export class Tasks" to find class comment
   if (tasksClassStart !== -1) {
@@ -414,7 +453,40 @@ function loadTaskDocs(filePath) {
     }
   }
 
-  return { taskDocs: docs, classDoc };
+  // Merge parent docs with current class docs (current class overrides)
+  Object.assign(allDocs, docs);
+
+  return { taskDocs: allDocs, classDoc };
+}
+
+// Helper function to extract method docs from any source
+function extractMethodDocs(source) {
+  const docs = {};
+  // Match both class and export default class patterns
+  const classMatch = source.match(
+    /(?:export\s+default\s+)?class\s+\w+\s*(?:extends\s+\w+)?\s*{([\s\S]*?)^}/m,
+  );
+
+  if (classMatch) {
+    const classContent = classMatch[1];
+    const methodRegex = /\/\*\*([\s\S]*?)\*\/\s*(?:async\s+)?(\w+)\s*\(/g;
+    let match;
+
+    while ((match = methodRegex.exec(classContent)) !== null) {
+      const [fullMatch, comment, methodName] = match;
+      if (methodName !== "constructor" && !methodName.startsWith("_")) {
+        // Extract just the first line of the comment for the description
+        const lines = comment
+          .split("\n")
+          .map((line) => line.replace(/^\s*\*\s?/, "").trim())
+          .filter((line) => line && !line.startsWith("@"));
+
+        docs[methodName] = lines[0] || "";
+      }
+    }
+  }
+
+  return docs;
 }
 
 function getMethodSignature(fn) {
