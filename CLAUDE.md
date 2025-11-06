@@ -12,7 +12,11 @@ invokej is a JavaScript/Bun task execution tool inspired by Python's Invoke. It 
 
 ### Testing and Development
 ```bash
-bun test                    # Run tests (currently no test files)
+bun test                    # Run all tests (137 test cases)
+bun test --watch            # Run tests in watch mode
+bun test test/context.test.js   # Run specific test file
+bun run test:plugins        # Run plugin tests only
+bun run test:integration    # Run integration tests only
 bun run dev                 # Run CLI locally
 bun run example             # List example tasks
 bun link                    # Link local version globally for testing
@@ -130,6 +134,13 @@ This is NOT a plugin architecture where plugins auto-register. Users/AI explicit
 /lib/
   init.js            - Project initialization templates
   plugin-catalog.js  - Plugin discovery and management
+/test/
+  context.test.js    - Context API tests (45+ tests)
+  cli.test.js        - CLI and task discovery tests (52+ tests)
+  todo-mgr.test.js   - Todo manager plugin tests (35+ tests)
+  wall-mgr.test.js   - Wall manager plugin tests (25+ tests)
+  integration/       - End-to-end integration tests (20+ tests)
+  fixtures/          - Test fixtures for task definitions
 ```
 
 ## Key Design Patterns
@@ -161,7 +172,43 @@ JSDoc parsing is in `loadTaskDocs()` in cli.js:
 - Uses regex to match `/** comment */ method(` patterns
 - Extracts only content within Tasks class boundaries
 
-## Testing Locally
+## Testing
+
+### Running Tests
+
+The project has a comprehensive test suite with 137+ test cases:
+
+```bash
+# Run all tests
+bun test
+
+# Run specific test suites
+bun test test/context.test.js      # Context API tests
+bun test test/cli.test.js          # CLI and task discovery
+bun test test/todo-mgr.test.js     # Todo plugin tests
+bun test test/wall-mgr.test.js     # Wall plugin tests
+bun test test/integration/         # Integration tests
+
+# Run in watch mode
+bun test --watch
+
+# Using npm scripts
+bun run test:context
+bun run test:cli
+bun run test:plugins
+bun run test:integration
+```
+
+### Test Coverage
+
+- **Context API**: Command execution, options, error handling, complex scenarios
+- **CLI**: Task discovery, parsing, JSDoc extraction, private filtering
+- **Plugins**: CRUD operations, statistics, formatting, validation
+- **Integration**: Full CLI workflows, help/listing/execution, error handling
+
+All tests use temporary databases and clean up after themselves. See `test/README.md` for detailed documentation.
+
+### Testing Locally
 
 ```bash
 # In the invokej directory
