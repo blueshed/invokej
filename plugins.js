@@ -8,6 +8,7 @@
  *   import { ToDoManager, TodoUI } from "invokej/plugins";
  *   import { WorkAPI } from "invokej/plugins";
  *   import { WallNamespace } from "invokej/plugins";
+ *   import { AIWorkAPI, AIWorkNamespace } from "invokej/plugins";
  */
 
 // Todo Manager Plugin
@@ -22,6 +23,9 @@ export {
   WallNamespace,
   createWallNamespace,
 } from "./plugins/wall_mgr.js";
+
+// AI Work Manager Plugin - Extends WorkAPI with AI memory features
+export { AIWorkAPI, AIWorkNamespace } from "./plugins/ai_work_mgr.js";
 
 // Future plugins can be added here as they are created
 // Example:
