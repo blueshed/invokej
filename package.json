@@ -26,6 +26,11 @@
   ],
   "scripts": {
     "test": "bun test",
+    "test:watch": "bun test --watch",
+    "test:context": "bun test test/context.test.js",
+    "test:cli": "bun test test/cli.test.js",
+    "test:plugins": "bun test test/todo-mgr.test.js test/wall-mgr.test.js",
+    "test:integration": "bun test test/integration/",
     "dev": "bun cli.js",
     "example": "bun cli.js --list"
   },
