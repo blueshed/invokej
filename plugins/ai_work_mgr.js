@@ -603,10 +603,90 @@ export class AIWorkNamespace {
     this.currentProjectId = null;
   }
 
+  // ==================== Project Management ====================
+
+  /** Create a new project */
+  async projectCreate(c, name) {
+    const result = this.ai.saveProject(name);
+    const projectId = result.lastInsertRowid;
+
+    console.log(`✅ Project "${name}" created (ID: ${projectId})`);
+    console.log(`   Set as current: invj ai:setProject ${projectId}`);
+
+    return projectId;
+  }
+
+  /** List all projects */
+  async projectList(c) {
+    const projects = this.ai.getProjects();
+
+    if (projects.length === 0) {
+      console.log("ℹ️  No projects found");
+      console.log("   Create one with: invj ai:projectCreate <name>");
+      return;
+    }
+
+    console.log("\n📂 Projects:\n");
+    projects.forEach(p => {
+      const current = p.id === this.currentProjectId ? " (current)" : "";
+      console.log(`${p.id}. ${p.name}${current}`);
+    });
+    console.log("");
+  }
+
+  /** Show current project */
+  async projectShow(c, projectId = null) {
+    const id = projectId ? parseInt(projectId) : this.currentProjectId;
+
+    if (!id) {
+      console.error("❌ No project ID provided and no current project set");
+      return;
+    }
+
+    const project = this.ai.getProject(id);
+
+    if (!project) {
+      console.error(`❌ Project ${id} not found`);
+      return;
+    }
+
+    console.log(`\n📂 Project: ${project.name} (ID: ${id})\n`);
+    console.log(`Tasks: ${project.tasks.length} total`);
+
+    const pending = project.tasks.filter(t => !t.completed_at);
+    const completed = project.tasks.filter(t => t.completed_at);
+
+    console.log(`   ${pending.length} pending`);
+    console.log(`   ${completed.length} completed`);
+    console.log(`\nContext items: ${project.context.length}`);
+
+    if (project.context.length > 0) {
+      const byType = project.context.reduce((acc, c) => {
+        acc[c.knowledge_type] = (acc[c.knowledge_type] || 0) + 1;
+        return acc;
+      }, {});
+
+      Object.entries(byType).forEach(([type, count]) => {
+        console.log(`   ${type}: ${count}`);
+      });
+    }
+  }
+
   /** Set the current project context */
   async setProject(c, projectId) {
-    this.currentProjectId = parseInt(projectId);
-    console.log(`✅ Project ${projectId} set as current context`);
+    const id = parseInt(projectId);
+
+    // Verify project exists
+    const project = this.ai.getProject(id);
+
+    if (!project) {
+      console.error(`❌ Project ${id} not found`);
+      console.log("   List projects with: invj ai:projectList");
+      return;
+    }
+
+    this.currentProjectId = id;
+    console.log(`✅ Project "${project.name}" (ID: ${id}) set as current context`);
   }
 
   // ==================== Session Commands ====================

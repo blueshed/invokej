@@ -28,20 +28,14 @@ export class Tasks {
 
   // ==================== Quick Start ====================
 
-  /** Initialize a new project for AI tracking */
-  async init(c, projectName) {
-    console.log(`Initializing AI tracking for project: ${projectName}`);
-
-    // Create project (from base WorkAPI)
-    const result = this.ai.ai.saveProject(projectName);
-    const projectId = result.lastInsertRowid;
-
-    console.log(`✅ Project created with ID: ${projectId}`);
-    console.log(`\nSet as current context:`);
-    console.log(`  invj ai:setProject ${projectId}`);
-
-    return projectId;
-  }
+  /**
+   * Note: You no longer need a custom init method!
+   * Use the built-in project management commands:
+   *   invj ai:projectCreate <name>    - Create a new project
+   *   invj ai:projectList             - List all projects
+   *   invj ai:projectShow [id]        - Show project details
+   *   invj ai:setProject <id>         - Set current project
+   */
 
   /** Quick workflow demo */
   async demo(c) {
@@ -50,8 +44,9 @@ export class Tasks {
 =================================
 
 # 1. Set up project
-invj init "My App"
-invj ai:setProject 1
+invj ai:projectCreate "My App"              # Creates project, returns ID
+invj ai:projectList                          # List all projects
+invj ai:setProject 1                         # Set project 1 as current
 
 # 2. Start AI session
 invj ai:sessionStart claude-3.5-sonnet "Implement user auth"
@@ -90,8 +85,10 @@ invj ai:sessionHistory
  * Complete Command Reference
  * ==========================
  *
- * Setup:
- *   invj init <projectName>                    # Create new project
+ * Project Management:
+ *   invj ai:projectCreate <name>               # Create a new project
+ *   invj ai:projectList                        # List all projects
+ *   invj ai:projectShow [id]                   # Show project details (current if no ID)
  *   invj ai:setProject <id>                    # Set current project context
  *
  * Sessions:

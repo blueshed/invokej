@@ -114,8 +114,14 @@ Basic todo system with priorities, due dates, search.
 - 📝 **Prompt templates** - Store successful prompts
 - 📊 **Quality metrics** - Component stability tracking
 
-**30+ Commands:**
+**33+ Commands:**
 ```bash
+# Project Management
+invj ai:projectCreate "My App"  # Create project
+invj ai:projectList             # List all projects
+invj ai:projectShow 1           # Show project details
+invj ai:setProject 1            # Set current project
+
 # Sessions
 invj ai:sessionStart claude-3.5-sonnet "Fix bug"
 invj ai:sessionEnd "Bug fixed"
@@ -144,8 +150,11 @@ invj ai:codeFind "Auth"
 ## Real Example Workflow
 
 ```bash
+# First time setup
+invj ai:projectCreate "My App"
+invj ai:setProject 1  # Use the ID returned from create
+
 # Morning - Start fresh session
-invj ai:setProject 1
 invj ai:sessionStart claude-3.5-sonnet "Add notifications"
 
 # Load context
