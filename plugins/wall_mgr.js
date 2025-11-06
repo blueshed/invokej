@@ -20,10 +20,10 @@ export class ContextWall {
 
   getDefaultPath() {
     // Try project-local first
-    if (!existsSync('.invokej')) {
-      mkdirSync('.invokej', { recursive: true });
+    if (!existsSync(".invokej")) {
+      mkdirSync(".invokej", { recursive: true });
     }
-    return '.invokej/context.db';
+    return ".invokej/context.db";
   }
 
   initialize() {
@@ -102,44 +102,70 @@ export class ContextWall {
 
   addFoundation(decision, rationale, constraints = null) {
     const stmt = this.db.prepare(
-      "INSERT INTO foundation (decision, rationale, constraints) VALUES (?, ?, ?)"
+      "INSERT INTO foundation (decision, rationale, constraints) VALUES (?, ?, ?)",
     );
     return stmt.run(decision, rationale, constraints);
   }
 
   getFoundation() {
-    return this.db.prepare("SELECT * FROM foundation ORDER BY created_at").all();
+    return this.db
+      .prepare("SELECT * FROM foundation ORDER BY created_at")
+      .all();
   }
 
   // ========== Wall Methods ==========
 
-  addToWall(component, description, layer, position, dependsOn = null, rationale = null) {
+  addToWall(
+    component,
+    description,
+    layer,
+    position,
+    dependsOn = null,
+    rationale = null,
+  ) {
     const stmt = this.db.prepare(`
       INSERT INTO wall (layer, position, component, description, depends_on, rationale)
       VALUES (?, ?, ?, ?, ?, ?)
     `);
-    return stmt.run(layer, position, component, description, dependsOn, rationale);
+    return stmt.run(
+      layer,
+      position,
+      component,
+      description,
+      dependsOn,
+      rationale,
+    );
   }
 
   getWall() {
-    return this.db.prepare("SELECT * FROM wall ORDER BY layer DESC, position").all();
+    return this.db
+      .prepare("SELECT * FROM wall ORDER BY layer DESC, position")
+      .all();
   }
 
   getNextLayer() {
-    const result = this.db.prepare("SELECT MAX(layer) as max_layer FROM wall").get();
+    const result = this.db
+      .prepare("SELECT MAX(layer) as max_layer FROM wall")
+      .get();
     return (result?.max_layer || 0) + 1;
   }
 
   getNextPosition(layer) {
-    const result = this.db.prepare(
-      "SELECT MAX(position) as max_pos FROM wall WHERE layer = ?"
-    ).get(layer);
+    const result = this.db
+      .prepare("SELECT MAX(position) as max_pos FROM wall WHERE layer = ?")
+      .get(layer);
     return (result?.max_pos || 0) + 1;
   }
 
   // ========== Edge Methods ==========
 
-  setEdge(component, status = null, approach = null, blockers = null, nextSteps = null) {
+  setEdge(
+    component,
+    status = null,
+    approach = null,
+    blockers = null,
+    nextSteps = null,
+  ) {
     this.db.run("DELETE FROM edge"); // Only one active edge
     const stmt = this.db.prepare(`
       INSERT INTO edge (component, status, current_approach, blockers, next_steps)
@@ -149,7 +175,7 @@ export class ContextWall {
   }
 
   getEdge() {
-    return this.db.prepare("SELECT * FROM edge").get();
+    return this.db.prepare("SELECT * FROM edge").get() || undefined;
   }
 
   // ========== Rubble Methods ==========
@@ -163,9 +189,9 @@ export class ContextWall {
   }
 
   getRubble(limit = 5) {
-    return this.db.prepare(
-      "SELECT * FROM rubble ORDER BY tried_at DESC LIMIT ?"
-    ).all(limit);
+    return this.db
+      .prepare("SELECT * FROM rubble ORDER BY id DESC LIMIT ?")
+      .all(limit);
   }
 
   // ========== Current Focus Methods ==========
@@ -179,7 +205,9 @@ export class ContextWall {
   }
 
   getCurrentFocus() {
-    return this.db.prepare("SELECT * FROM current WHERE id = 1").get();
+    return (
+      this.db.prepare("SELECT * FROM current WHERE id = 1").get() || undefined
+    );
   }
 
   // ========== Utility Methods ==========
@@ -189,8 +217,11 @@ export class ContextWall {
       current: this.getCurrentFocus(),
       edge: this.getEdge(),
       recentRubble: this.getRubble(3),
-      wallHeight: this.db.prepare("SELECT COUNT(*) as count FROM wall").get().count,
-      foundationCount: this.db.prepare("SELECT COUNT(*) as count FROM foundation").get().count
+      wallHeight: this.db.prepare("SELECT COUNT(*) as count FROM wall").get()
+        .count,
+      foundationCount: this.db
+        .prepare("SELECT COUNT(*) as count FROM foundation")
+        .get().count,
     };
   }
 }
@@ -218,7 +249,9 @@ export class WallNamespace {
       if (context.current.next_action)
         console.log(`➡️  Next: ${context.current.next_action}`);
     } else {
-      console.log("📍 No focus set. Use: invokej wall:focus 'what you're working on'");
+      console.log(
+        "📍 No focus set. Use: invokej wall:focus 'what you're working on'",
+      );
     }
 
     if (context.edge) {
@@ -234,12 +267,14 @@ export class WallNamespace {
 
     if (context.recentRubble.length > 0) {
       console.log("\n📚 Recent Lessons:");
-      context.recentRubble.forEach(r => {
+      context.recentRubble.forEach((r) => {
         console.log(`   • ${r.lesson_learned}`);
       });
     }
 
-    console.log(`\n📊 Progress: ${context.wallHeight} components built on ${context.foundationCount} decisions`);
+    console.log(
+      `\n📊 Progress: ${context.wallHeight} components built on ${context.foundationCount} decisions`,
+    );
   }
 
   /** Show the wall visualization */
@@ -259,17 +294,21 @@ export class WallNamespace {
       }
 
       const layers = {};
-      wall.forEach(brick => {
+      wall.forEach((brick) => {
         if (!layers[brick.layer]) layers[brick.layer] = [];
         layers[brick.layer].push(brick);
       });
 
-      Object.entries(layers).sort((a, b) => b[0] - a[0]).forEach(([layer, bricks]) => {
-        console.log(`\nLayer ${layer}:`);
-        bricks.forEach(brick => {
-          console.log(`  • ${brick.component} - ${brick.description || 'No description'}`);
+      Object.entries(layers)
+        .sort((a, b) => b[0] - a[0])
+        .forEach(([layer, bricks]) => {
+          console.log(`\nLayer ${layer}:`);
+          bricks.forEach((brick) => {
+            console.log(
+              `  • ${brick.component} - ${brick.description || "No description"}`,
+            );
+          });
         });
-      });
     }
   }
 
@@ -289,7 +328,9 @@ export class WallNamespace {
 
     const position = this.wall.getNextPosition(layer);
     this.wall.addToWall(component, description, layer, position);
-    console.log(`✅ Added to wall: ${component} (Layer ${layer}, Position ${position})`);
+    console.log(
+      `✅ Added to wall: ${component} (Layer ${layer}, Position ${position})`,
+    );
   }
 
   /** Set current development focus */
@@ -298,10 +339,14 @@ export class WallNamespace {
       const current = this.wall.getCurrentFocus();
       if (current) {
         console.log(`\n📍 Current Focus: ${current.focus}`);
-        if (current.last_action) console.log(`✅ Last Action: ${current.last_action}`);
-        if (current.next_action) console.log(`➡️  Next Action: ${current.next_action}`);
+        if (current.last_action)
+          console.log(`✅ Last Action: ${current.last_action}`);
+        if (current.next_action)
+          console.log(`➡️  Next Action: ${current.next_action}`);
       } else {
-        console.log("No focus set. Use: invokej wall:focus 'what you're working on'");
+        console.log(
+          "No focus set. Use: invokej wall:focus 'what you're working on'",
+        );
       }
       return;
     }
@@ -311,29 +356,41 @@ export class WallNamespace {
   }
 
   /** Set what we're currently building */
-  async edge(c, component = null, status = null, approach = null, blockers = null, nextSteps = null) {
+  async edge(
+    c,
+    component = null,
+    status = null,
+    approach = null,
+    blockers = null,
+    nextSteps = null,
+  ) {
     if (!component) {
       const edge = this.wall.getEdge();
       if (edge) {
         console.log(`\n🔨 Building: ${edge.component}`);
         if (edge.status) console.log(`Status: ${edge.status}`);
-        if (edge.current_approach) console.log(`Approach: ${edge.current_approach}`);
+        if (edge.current_approach)
+          console.log(`Approach: ${edge.current_approach}`);
         if (edge.blockers) console.log(`Blockers: ${edge.blockers}`);
         if (edge.next_steps) console.log(`Next Steps: ${edge.next_steps}`);
       } else {
-        console.log("No active edge. Use: invokej wall:edge 'component' [status]");
+        console.log(
+          "No active edge. Use: invokej wall:edge 'component' [status]",
+        );
       }
       return;
     }
 
     this.wall.setEdge(component, status, approach, blockers, nextSteps);
-    console.log(`🔨 Now building: ${component}${status ? ` (${status})` : ''}`);
+    console.log(`🔨 Now building: ${component}${status ? ` (${status})` : ""}`);
   }
 
   /** Record a failed attempt and lesson */
   async fail(c, component, approach, why, lesson) {
     if (!component || !approach || !why || !lesson) {
-      console.log('Usage: invokej wall:fail "component" "approach" "why it failed" "lesson learned"');
+      console.log(
+        'Usage: invokej wall:fail "component" "approach" "why it failed" "lesson learned"',
+      );
       return;
     }
 
@@ -344,7 +401,9 @@ export class WallNamespace {
   /** Add architectural decision to foundation */
   async decide(c, decision, rationale, constraints = null) {
     if (!decision || !rationale) {
-      console.log('Usage: invokej wall:decide "decision" "rationale" ["constraints"]');
+      console.log(
+        'Usage: invokej wall:decide "decision" "rationale" ["constraints"]',
+      );
       return;
     }
 
@@ -390,7 +449,9 @@ export class WallNamespace {
     console.log("=".repeat(50));
 
     if (rubble.length === 0) {
-      console.log("\nNo failures recorded yet. That's either very good or very suspicious!");
+      console.log(
+        "\nNo failures recorded yet. That's either very good or very suspicious!",
+      );
       return;
     }
 
@@ -412,10 +473,16 @@ export class WallNamespace {
   /** Show statistics about the wall */
   async stats(c) {
     const stats = {
-      wall: this.wall.db.prepare("SELECT COUNT(*) as count FROM wall").get().count,
-      foundation: this.wall.db.prepare("SELECT COUNT(*) as count FROM foundation").get().count,
-      rubble: this.wall.db.prepare("SELECT COUNT(*) as count FROM rubble").get().count,
-      layers: this.wall.db.prepare("SELECT MAX(layer) as max FROM wall").get().max || 0
+      wall: this.wall.db.prepare("SELECT COUNT(*) as count FROM wall").get()
+        .count,
+      foundation: this.wall.db
+        .prepare("SELECT COUNT(*) as count FROM foundation")
+        .get().count,
+      rubble: this.wall.db.prepare("SELECT COUNT(*) as count FROM rubble").get()
+        .count,
+      layers:
+        this.wall.db.prepare("SELECT MAX(layer) as max FROM wall").get().max ||
+        0,
     };
 
     console.log("\n📊 PROJECT STATISTICS");
@@ -426,7 +493,9 @@ export class WallNamespace {
     console.log(`📏 Wall Height: ${stats.layers} layers`);
 
     if (stats.rubble > 0 && stats.wall > 0) {
-      const ratio = (stats.wall / (stats.wall + stats.rubble) * 100).toFixed(1);
+      const ratio = ((stats.wall / (stats.wall + stats.rubble)) * 100).toFixed(
+        1,
+      );
       console.log(`✅ Success Rate: ${ratio}%`);
     }
   }
@@ -445,7 +514,7 @@ export class WallNamespace {
 
     // Group wall by layer
     const layers = {};
-    wallData.forEach(brick => {
+    wallData.forEach((brick) => {
       if (!layers[brick.layer]) layers[brick.layer] = [];
       layers[brick.layer].push(brick);
     });
@@ -458,12 +527,12 @@ export class WallNamespace {
       const offset = layer % 2 === 0 ? "   " : "";
 
       let brickLine = offset;
-      layerBricks.forEach(brick => {
+      layerBricks.forEach((brick) => {
         brickLine += "████████ ";
       });
 
       let labelLine = offset;
-      layerBricks.forEach(brick => {
+      layerBricks.forEach((brick) => {
         let name = brick.component;
         if (name.length > 8) name = name.substring(0, 7) + "…";
         labelLine += name.padEnd(8) + " ";
@@ -482,10 +551,12 @@ export class WallNamespace {
     }
 
     // Stats
-    const foundationCount = this.wall.db.prepare(
-      "SELECT COUNT(*) as count FROM foundation"
-    ).get().count;
-    console.log(`\n📊 ${wallData.length} components built on ${foundationCount} architectural decisions`);
+    const foundationCount = this.wall.db
+      .prepare("SELECT COUNT(*) as count FROM foundation")
+      .get().count;
+    console.log(
+      `\n📊 ${wallData.length} components built on ${foundationCount} architectural decisions`,
+    );
   }
 }
 

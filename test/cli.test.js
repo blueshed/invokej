@@ -41,8 +41,14 @@ describe("CLI Task Discovery and Parsing", () => {
       const { Tasks } = await import("./fixtures/simple-tasks.js");
       const instance = new Tasks();
 
-      const methods = Object.getOwnPropertyNames(Object.getPrototypeOf(instance))
-        .filter(name => name !== "constructor" && !name.startsWith("_") && typeof instance[name] === "function");
+      const methods = Object.getOwnPropertyNames(
+        Object.getPrototypeOf(instance),
+      ).filter(
+        (name) =>
+          name !== "constructor" &&
+          !name.startsWith("_") &&
+          typeof instance[name] === "function",
+      );
 
       expect(methods).toContain("hello");
       expect(methods).toContain("build");
@@ -60,7 +66,10 @@ describe("CLI Task Discovery and Parsing", () => {
       // Check that private namespace is filtered
       expect(instance._private).toBeDefined(); // exists as property
       const namespaces = Object.getOwnPropertyNames(instance).filter(
-        prop => !prop.startsWith("_") && instance[prop] && typeof instance[prop] === "object"
+        (prop) =>
+          !prop.startsWith("_") &&
+          instance[prop] &&
+          typeof instance[prop] === "object",
       );
 
       expect(namespaces).toContain("db");
@@ -76,8 +85,12 @@ describe("CLI Task Discovery and Parsing", () => {
       let proto = Object.getPrototypeOf(instance);
 
       while (proto && proto !== Object.prototype) {
-        Object.getOwnPropertyNames(proto).forEach(name => {
-          if (name !== "constructor" && !name.startsWith("_") && typeof instance[name] === "function") {
+        Object.getOwnPropertyNames(proto).forEach((name) => {
+          if (
+            name !== "constructor" &&
+            !name.startsWith("_") &&
+            typeof instance[name] === "function"
+          ) {
             methods.add(name);
           }
         });
@@ -133,20 +146,26 @@ describe("CLI Task Discovery and Parsing", () => {
     test("should extract method documentation", () => {
       const source = readFileSync(
         path.resolve(import.meta.dir, "./fixtures/simple-tasks.js"),
-        "utf-8"
+        "utf-8",
       );
+
+      // Extract Tasks class content first (matching cli.js behavior)
+      const classMatch = source.match(
+        /export\s+class\s+Tasks\s*(?:extends\s+\w+\s*)?\{([\s\S]*)\}/,
+      );
+      const tasksClassContent = classMatch ? classMatch[1] : source;
 
       // Simple regex to find JSDoc comments before methods
       const methodRegex = /\/\*\*([\s\S]*?)\*\/\s*(?:async\s+)?(\w+)\s*\(/g;
       const docs = {};
       let match;
 
-      while ((match = methodRegex.exec(source)) !== null) {
+      while ((match = methodRegex.exec(tasksClassContent)) !== null) {
         const [, comment, methodName] = match;
         const lines = comment
           .split("\n")
-          .map(line => line.replace(/^\s*\*\s?/, "").trim())
-          .filter(line => line && !line.startsWith("@"));
+          .map((line) => line.replace(/^\s*\*\s?/, "").trim())
+          .filter((line) => line && !line.startsWith("@"));
 
         if (methodName !== "constructor" && !methodName.startsWith("_")) {
           docs[methodName] = lines[0] || "";
@@ -161,7 +180,7 @@ describe("CLI Task Discovery and Parsing", () => {
     test("should extract class documentation", () => {
       const source = readFileSync(
         path.resolve(import.meta.dir, "./fixtures/simple-tasks.js"),
-        "utf-8"
+        "utf-8",
       );
 
       // Look for comment before "export class Tasks"
@@ -174,8 +193,15 @@ describe("CLI Task Discovery and Parsing", () => {
           if (char === "/" && source[i - 1] === "*") {
             const commentEnd = i + 1;
             for (let j = i - 1; j >= 1; j--) {
-              if (source[j] === "*" && source[j - 1] === "/" && source[j + 1] === "*") {
-                const commentContent = source.substring(j - 1 + 3, commentEnd - 2);
+              if (
+                source[j] === "*" &&
+                source[j - 1] === "/" &&
+                source[j + 1] === "*"
+              ) {
+                const commentContent = source.substring(
+                  j - 1 + 3,
+                  commentEnd - 2,
+                );
                 classDoc = commentContent
                   .replace(/^\s*\*/gm, "")
                   .replace(/^\s+/gm, "")
@@ -207,7 +233,7 @@ describe("CLI Task Discovery and Parsing", () => {
       expect(name).toBe("hello");
 
       // Context parameter should be first and should be sliced off in display
-      const paramList = params.split(",").map(p => p.trim());
+      const paramList = params.split(",").map((p) => p.trim());
       expect(paramList[0]).toBe("c"); // Context parameter
       expect(paramList[1]).toContain("name"); // User parameter
     });

@@ -60,7 +60,9 @@ export class ToDoManager {
   }
 
   getTodo(id) {
-    return this.db.prepare("SELECT * FROM todos WHERE id = ?").get(id);
+    return (
+      this.db.prepare("SELECT * FROM todos WHERE id = ?").get(id) || undefined
+    );
   }
 
   completeTodo(id) {
