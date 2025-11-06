@@ -177,7 +177,7 @@ export class AIWorkAPI extends WorkAPI {
 
   startSession(projectId, model, assistantName = "AI", goal = null) {
     const stmt = this.db.prepare(
-      "INSERT INTO ai_sessions (project_id, model, assistant_name, session_goal) VALUES (?, ?, ?, ?)"
+      "INSERT INTO ai_sessions (project_id, model, assistant_name, session_goal) VALUES (?, ?, ?, ?)",
     );
     return stmt.run(projectId, model, assistantName, goal).lastInsertRowid;
   }
@@ -192,40 +192,59 @@ export class AIWorkAPI extends WorkAPI {
   }
 
   getCurrentSession(projectId) {
-    return this.db.prepare(`
+    return this.db
+      .prepare(
+        `
       SELECT * FROM ai_sessions
       WHERE project_id = ? AND ended_at IS NULL
       ORDER BY started_at DESC
       LIMIT 1
-    `).get(projectId);
+    `,
+      )
+      .get(projectId);
   }
 
   getSessionHistory(projectId, limit = 10) {
-    return this.db.prepare(`
+    return this.db
+      .prepare(
+        `
       SELECT * FROM ai_sessions
       WHERE project_id = ?
       ORDER BY started_at DESC
       LIMIT ?
-    `).all(projectId, limit);
+    `,
+      )
+      .all(projectId, limit);
   }
 
   logAction(sessionId, actionType, target, details = null) {
     const stmt = this.db.prepare(
-      "INSERT INTO session_actions (session_id, action_type, target, details) VALUES (?, ?, ?, ?)"
+      "INSERT INTO session_actions (session_id, action_type, target, details) VALUES (?, ?, ?, ?)",
     );
     return stmt.run(sessionId, actionType, target, details);
   }
 
   getSessionActions(sessionId) {
-    return this.db.prepare(
-      "SELECT * FROM session_actions WHERE session_id = ? ORDER BY timestamp"
-    ).all(sessionId);
+    return this.db
+      .prepare(
+        "SELECT * FROM session_actions WHERE session_id = ? ORDER BY timestamp",
+      )
+      .all(sessionId);
   }
 
   // ==================== Patterns ====================
 
-  addPattern(projectId, name, problem, solution, category = null, antipattern = null,
-             whenToUse = null, exampleCode = null, sessionId = null) {
+  addPattern(
+    projectId,
+    name,
+    problem,
+    solution,
+    category = null,
+    antipattern = null,
+    whenToUse = null,
+    exampleCode = null,
+    sessionId = null,
+  ) {
     const stmt = this.db.prepare(`
       INSERT INTO patterns (
         project_id, name, category, problem, solution, antipattern,
@@ -233,8 +252,15 @@ export class AIWorkAPI extends WorkAPI {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     return stmt.run(
-      projectId, name, category, problem, solution, antipattern,
-      whenToUse, exampleCode, sessionId
+      projectId,
+      name,
+      category,
+      problem,
+      solution,
+      antipattern,
+      whenToUse,
+      exampleCode,
+      sessionId,
     ).lastInsertRowid;
   }
 
@@ -260,21 +286,24 @@ export class AIWorkAPI extends WorkAPI {
 
   usePattern(patternId) {
     const stmt = this.db.prepare(
-      "UPDATE patterns SET times_used = times_used + 1 WHERE id = ?"
+      "UPDATE patterns SET times_used = times_used + 1 WHERE id = ?",
     );
     return stmt.run(patternId);
   }
 
   ratePattern(patternId, success) {
     // Update success rate using exponential moving average
-    const pattern = this.db.prepare("SELECT success_rate, times_used FROM patterns WHERE id = ?").get(patternId);
+    const pattern = this.db
+      .prepare("SELECT success_rate, times_used FROM patterns WHERE id = ?")
+      .get(patternId);
     if (!pattern) return false;
 
     const alpha = 0.3; // Weight for new observation
-    const newRate = alpha * (success ? 1.0 : 0.0) + (1 - alpha) * pattern.success_rate;
+    const newRate =
+      alpha * (success ? 1.0 : 0.0) + (1 - alpha) * pattern.success_rate;
 
     const stmt = this.db.prepare(
-      "UPDATE patterns SET success_rate = ? WHERE id = ?"
+      "UPDATE patterns SET success_rate = ? WHERE id = ?",
     );
     return stmt.run(newRate, patternId);
   }
@@ -283,13 +312,20 @@ export class AIWorkAPI extends WorkAPI {
 
   createDecision(projectId, question, context = null, sessionId = null) {
     const stmt = this.db.prepare(
-      "INSERT INTO decisions (project_id, session_id, question, context) VALUES (?, ?, ?, ?)"
+      "INSERT INTO decisions (project_id, session_id, question, context) VALUES (?, ?, ?, ?)",
     );
     return stmt.run(projectId, sessionId, question, context).lastInsertRowid;
   }
 
-  addDecisionOption(decisionId, optionName, description = null, pros = null,
-                    cons = null, effort = null, risk = null) {
+  addDecisionOption(
+    decisionId,
+    optionName,
+    description = null,
+    pros = null,
+    cons = null,
+    effort = null,
+    risk = null,
+  ) {
     const stmt = this.db.prepare(`
       INSERT INTO decision_options (
         decision_id, option_name, description, pros, cons,
@@ -297,7 +333,13 @@ export class AIWorkAPI extends WorkAPI {
       ) VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
     return stmt.run(
-      decisionId, optionName, description, pros, cons, effort, risk
+      decisionId,
+      optionName,
+      description,
+      pros,
+      cons,
+      effort,
+      risk,
     ).lastInsertRowid;
   }
 
@@ -311,125 +353,172 @@ export class AIWorkAPI extends WorkAPI {
   }
 
   getDecision(decisionId) {
-    const decision = this.db.prepare(
-      "SELECT * FROM decisions WHERE id = ?"
-    ).get(decisionId);
+    const decision = this.db
+      .prepare("SELECT * FROM decisions WHERE id = ?")
+      .get(decisionId);
 
     if (!decision) return null;
 
-    const options = this.db.prepare(
-      "SELECT * FROM decision_options WHERE decision_id = ?"
-    ).all(decisionId);
+    const options = this.db
+      .prepare("SELECT * FROM decision_options WHERE decision_id = ?")
+      .all(decisionId);
 
     return { ...decision, options };
   }
 
   getRecentDecisions(projectId, limit = 10) {
-    return this.db.prepare(`
+    return this.db
+      .prepare(
+        `
       SELECT * FROM decisions
       WHERE project_id = ?
       ORDER BY created_at DESC
       LIMIT ?
-    `).all(projectId, limit);
+    `,
+      )
+      .all(projectId, limit);
   }
 
   // ==================== Context Snapshots ====================
 
-  createSnapshot(projectId, name, description, snapshotData, sessionId = null, gitCommit = null) {
+  createSnapshot(
+    projectId,
+    name,
+    description,
+    snapshotData,
+    sessionId = null,
+    gitCommit = null,
+  ) {
     const stmt = this.db.prepare(`
       INSERT INTO context_snapshots (
         project_id, session_id, name, description, snapshot_data, git_commit
       ) VALUES (?, ?, ?, ?, ?, ?)
     `);
     return stmt.run(
-      projectId, sessionId, name, description,
-      JSON.stringify(snapshotData), gitCommit
+      projectId,
+      sessionId,
+      name,
+      description,
+      JSON.stringify(snapshotData),
+      gitCommit,
     ).lastInsertRowid;
   }
 
   getSnapshot(snapshotId) {
-    const snapshot = this.db.prepare(
-      "SELECT * FROM context_snapshots WHERE id = ?"
-    ).get(snapshotId);
+    const snapshot = this.db
+      .prepare("SELECT * FROM context_snapshots WHERE id = ?")
+      .get(snapshotId);
 
     if (!snapshot) return null;
 
     return {
       ...snapshot,
-      snapshot_data: JSON.parse(snapshot.snapshot_data)
+      snapshot_data: JSON.parse(snapshot.snapshot_data),
     };
   }
 
   listSnapshots(projectId) {
-    return this.db.prepare(`
+    return this.db
+      .prepare(
+        `
       SELECT id, name, description, created_at, git_commit
       FROM context_snapshots
       WHERE project_id = ?
       ORDER BY created_at DESC
-    `).all(projectId);
+    `,
+      )
+      .all(projectId);
   }
 
   // ==================== Code Locations ====================
 
-  mapCodeLocation(projectId, componentName, filePath, startLine = null,
-                  endLine = null, description = null) {
+  mapCodeLocation(
+    projectId,
+    componentName,
+    filePath,
+    startLine = null,
+    endLine = null,
+    description = null,
+  ) {
     const stmt = this.db.prepare(`
       INSERT INTO code_locations (
         project_id, component_name, file_path, start_line, end_line, description
       ) VALUES (?, ?, ?, ?, ?, ?)
     `);
     return stmt.run(
-      projectId, componentName, filePath, startLine, endLine, description
+      projectId,
+      componentName,
+      filePath,
+      startLine,
+      endLine,
+      description,
     ).lastInsertRowid;
   }
 
   findCodeLocations(projectId, componentName = null) {
     if (componentName) {
-      return this.db.prepare(`
+      return this.db
+        .prepare(
+          `
         SELECT * FROM code_locations
         WHERE project_id = ? AND component_name LIKE ?
         ORDER BY component_name, file_path
-      `).all(projectId, `%${componentName}%`);
+      `,
+        )
+        .all(projectId, `%${componentName}%`);
     } else {
-      return this.db.prepare(`
+      return this.db
+        .prepare(
+          `
         SELECT * FROM code_locations
         WHERE project_id = ?
         ORDER BY component_name, file_path
-      `).all(projectId);
+      `,
+        )
+        .all(projectId);
     }
   }
 
   updateCodeLocation(locationId) {
     const stmt = this.db.prepare(
-      "UPDATE code_locations SET last_modified = CURRENT_TIMESTAMP WHERE id = ?"
+      "UPDATE code_locations SET last_modified = CURRENT_TIMESTAMP WHERE id = ?",
     );
     return stmt.run(locationId);
   }
 
   // ==================== Prompt Templates ====================
 
-  addPromptTemplate(projectId, name, template, category = null, variables = null) {
+  addPromptTemplate(
+    projectId,
+    name,
+    template,
+    category = null,
+    variables = null,
+  ) {
     const stmt = this.db.prepare(`
       INSERT INTO prompt_templates (
         project_id, name, category, template, variables
       ) VALUES (?, ?, ?, ?, ?)
     `);
     return stmt.run(
-      projectId, name, category, template,
-      variables ? JSON.stringify(variables) : null
+      projectId,
+      name,
+      category,
+      template,
+      variables ? JSON.stringify(variables) : null,
     ).lastInsertRowid;
   }
 
   getPromptTemplate(templateId) {
-    const template = this.db.prepare(
-      "SELECT * FROM prompt_templates WHERE id = ?"
-    ).get(templateId);
+    const template = this.db
+      .prepare("SELECT * FROM prompt_templates WHERE id = ?")
+      .get(templateId);
 
     if (!template) return null;
 
     return {
       ...template,
-      variables: template.variables ? JSON.parse(template.variables) : []
+      variables: template.variables ? JSON.parse(template.variables) : [],
     };
   }
 
@@ -455,9 +544,11 @@ export class AIWorkAPI extends WorkAPI {
 
   usePromptTemplate(templateId, qualityScore = null) {
     // Update usage count and optionally quality score
-    const template = this.db.prepare(
-      "SELECT usage_count, avg_quality_score FROM prompt_templates WHERE id = ?"
-    ).get(templateId);
+    const template = this.db
+      .prepare(
+        "SELECT usage_count, avg_quality_score FROM prompt_templates WHERE id = ?",
+      )
+      .get(templateId);
 
     if (!template) return false;
 
@@ -468,7 +559,8 @@ export class AIWorkAPI extends WorkAPI {
       } else {
         // Exponential moving average
         const alpha = 0.3;
-        newAvg = alpha * qualityScore + (1 - alpha) * template.avg_quality_score;
+        newAvg =
+          alpha * qualityScore + (1 - alpha) * template.avg_quality_score;
       }
     }
 
@@ -488,7 +580,7 @@ export class AIWorkAPI extends WorkAPI {
 
     let expanded = template.template;
     for (const [key, value] of Object.entries(variables)) {
-      expanded = expanded.replace(new RegExp(`{{${key}}}`, 'g'), value);
+      expanded = expanded.replace(new RegExp(`{{${key}}}`, "g"), value);
     }
 
     this.usePromptTemplate(templateId);
@@ -498,21 +590,32 @@ export class AIWorkAPI extends WorkAPI {
 
   // ==================== Quality Events ====================
 
-  logQualityEvent(projectId, eventType, componentName = null, filePath = null,
-                  severity = 'medium', details = null) {
+  logQualityEvent(
+    projectId,
+    eventType,
+    componentName = null,
+    filePath = null,
+    severity = "medium",
+    details = null,
+  ) {
     const stmt = this.db.prepare(`
       INSERT INTO quality_events (
         project_id, component_name, file_path, event_type, severity, details
       ) VALUES (?, ?, ?, ?, ?, ?)
     `);
     return stmt.run(
-      projectId, componentName, filePath, eventType, severity, details
+      projectId,
+      componentName,
+      filePath,
+      eventType,
+      severity,
+      details,
     ).lastInsertRowid;
   }
 
   resolveQualityEvent(eventId) {
     const stmt = this.db.prepare(
-      "UPDATE quality_events SET resolved_at = CURRENT_TIMESTAMP WHERE id = ?"
+      "UPDATE quality_events SET resolved_at = CURRENT_TIMESTAMP WHERE id = ?",
     );
     return stmt.run(eventId);
   }
@@ -561,7 +664,7 @@ export class AIWorkAPI extends WorkAPI {
       patterns: recentPatterns.slice(0, 10),
       decisions: recentDecisions,
       qualityMetrics,
-      currentSession
+      currentSession,
     };
   }
 
@@ -569,26 +672,29 @@ export class AIWorkAPI extends WorkAPI {
    * Generate session summary for reporting
    */
   getSessionSummary(sessionId) {
-    const session = this.db.prepare(
-      "SELECT * FROM ai_sessions WHERE id = ?"
-    ).get(sessionId);
+    const session = this.db
+      .prepare("SELECT * FROM ai_sessions WHERE id = ?")
+      .get(sessionId);
 
     if (!session) return null;
 
     const actions = this.getSessionActions(sessionId);
 
     const actionCounts = {};
-    actions.forEach(action => {
-      actionCounts[action.action_type] = (actionCounts[action.action_type] || 0) + 1;
+    actions.forEach((action) => {
+      actionCounts[action.action_type] =
+        (actionCounts[action.action_type] || 0) + 1;
     });
 
     return {
       ...session,
       duration: session.ended_at
-        ? (new Date(session.ended_at) - new Date(session.started_at)) / 1000 / 60 // minutes
+        ? (new Date(session.ended_at) - new Date(session.started_at)) /
+          1000 /
+          60 // minutes
         : null,
       actions: actionCounts,
-      totalActions: actions.length
+      totalActions: actions.length,
     };
   }
 }
@@ -622,7 +728,7 @@ export class AIWorkNamespace {
       this.currentProjectId,
       model,
       "Claude",
-      goal
+      goal,
     );
 
     console.log(`🚀 Session ${sessionId} started`);
@@ -696,7 +802,10 @@ export class AIWorkNamespace {
       return;
     }
 
-    const sessions = this.ai.getSessionHistory(this.currentProjectId, parseInt(limit));
+    const sessions = this.ai.getSessionHistory(
+      this.currentProjectId,
+      parseInt(limit),
+    );
 
     if (sessions.length === 0) {
       console.log("ℹ️  No previous sessions");
@@ -704,11 +813,13 @@ export class AIWorkNamespace {
     }
 
     console.log(`\n📜 Recent Sessions:\n`);
-    sessions.forEach(session => {
+    sessions.forEach((session) => {
       const summary = this.ai.getSessionSummary(session.id);
       const status = session.ended_at ? "✅" : "🔄";
       console.log(`${status} Session ${session.id} - ${session.model}`);
-      console.log(`   Started: ${new Date(session.started_at).toLocaleString()}`);
+      console.log(
+        `   Started: ${new Date(session.started_at).toLocaleString()}`,
+      );
       if (session.ended_at) {
         console.log(`   Duration: ${summary.duration.toFixed(1)} min`);
       }
@@ -728,7 +839,9 @@ export class AIWorkNamespace {
 
     const session = this.ai.getCurrentSession(this.currentProjectId);
     if (!session) {
-      console.error("❌ No active session. Start one with: invj ai:sessionStart");
+      console.error(
+        "❌ No active session. Start one with: invj ai:sessionStart",
+      );
       return;
     }
 
@@ -752,8 +865,10 @@ export class AIWorkNamespace {
       problem,
       solution,
       category,
-      null, null, null,
-      session?.id
+      null,
+      null,
+      null,
+      session?.id,
     );
 
     console.log(`✅ Pattern "${name}" added (ID: ${patternId})`);
@@ -767,7 +882,11 @@ export class AIWorkNamespace {
       return;
     }
 
-    const patterns = this.ai.searchPatterns(this.currentProjectId, query, category);
+    const patterns = this.ai.searchPatterns(
+      this.currentProjectId,
+      query,
+      category,
+    );
 
     if (patterns.length === 0) {
       console.log("ℹ️  No patterns found");
@@ -775,12 +894,14 @@ export class AIWorkNamespace {
     }
 
     console.log(`\n🔍 Found ${patterns.length} pattern(s):\n`);
-    patterns.forEach(p => {
+    patterns.forEach((p) => {
       console.log(`📦 ${p.name} (ID: ${p.id})`);
       if (p.category) console.log(`   Category: ${p.category}`);
       console.log(`   Problem: ${p.problem}`);
       console.log(`   Solution: ${p.solution}`);
-      console.log(`   Used: ${p.times_used} times, Success: ${(p.success_rate * 100).toFixed(0)}%`);
+      console.log(
+        `   Used: ${p.times_used} times, Success: ${(p.success_rate * 100).toFixed(0)}%`,
+      );
       if (p.antipattern) console.log(`   ⚠️  Avoid: ${p.antipattern}`);
       console.log("");
     });
@@ -788,7 +909,9 @@ export class AIWorkNamespace {
 
   /** Show details of a specific pattern */
   async patternShow(c, patternId) {
-    const pattern = this.ai.db.prepare("SELECT * FROM patterns WHERE id = ?").get(parseInt(patternId));
+    const pattern = this.ai.db
+      .prepare("SELECT * FROM patterns WHERE id = ?")
+      .get(parseInt(patternId));
 
     if (!pattern) {
       console.error(`❌ Pattern ${patternId} not found`);
@@ -799,12 +922,15 @@ export class AIWorkNamespace {
     if (pattern.category) console.log(`Category: ${pattern.category}`);
     console.log(`Problem: ${pattern.problem}`);
     console.log(`Solution: ${pattern.solution}`);
-    if (pattern.antipattern) console.log(`⚠️  Antipattern: ${pattern.antipattern}`);
+    if (pattern.antipattern)
+      console.log(`⚠️  Antipattern: ${pattern.antipattern}`);
     if (pattern.when_to_use) console.log(`When to use: ${pattern.when_to_use}`);
     if (pattern.example_code) {
       console.log(`\nExample:\n${pattern.example_code}`);
     }
-    console.log(`\nStats: Used ${pattern.times_used} times, Success rate: ${(pattern.success_rate * 100).toFixed(0)}%`);
+    console.log(
+      `\nStats: Used ${pattern.times_used} times, Success rate: ${(pattern.success_rate * 100).toFixed(0)}%`,
+    );
   }
 
   // ==================== Decision Commands ====================
@@ -821,21 +947,33 @@ export class AIWorkNamespace {
       this.currentProjectId,
       question,
       context,
-      session?.id
+      session?.id,
     );
 
     console.log(`✅ Decision ${decisionId} created`);
     console.log(`   Question: ${question}`);
     if (context) console.log(`   Context: ${context}`);
-    console.log(`\n   Add options with: invj ai:decisionOption ${decisionId} <name> <pros> <cons>`);
+    console.log(
+      `\n   Add options with: invj ai:decisionOption ${decisionId} <name> <pros> <cons>`,
+    );
   }
 
   /** Add an option to a decision */
-  async decisionOption(c, decisionId, optionName, pros = null, cons = null, effort = null) {
+  async decisionOption(
+    c,
+    decisionId,
+    optionName,
+    pros = null,
+    cons = null,
+    effort = null,
+  ) {
     const optionId = this.ai.addDecisionOption(
       parseInt(decisionId),
       optionName,
-      null, pros, cons, effort
+      null,
+      pros,
+      cons,
+      effort,
     );
 
     console.log(`✅ Option "${optionName}" added to decision ${decisionId}`);
@@ -846,10 +984,14 @@ export class AIWorkNamespace {
 
   /** Choose an option for a decision */
   async decisionChoose(c, decisionId, optionId, rationale = null) {
-    this.ai.chooseDecisionOption(parseInt(decisionId), parseInt(optionId), rationale);
+    this.ai.chooseDecisionOption(
+      parseInt(decisionId),
+      parseInt(optionId),
+      rationale,
+    );
 
     const decision = this.ai.getDecision(parseInt(decisionId));
-    const chosen = decision.options.find(o => o.id === parseInt(optionId));
+    const chosen = decision.options.find((o) => o.id === parseInt(optionId));
 
     console.log(`✅ Decision ${decisionId} resolved`);
     console.log(`   Chosen: ${chosen.option_name}`);
@@ -874,7 +1016,8 @@ export class AIWorkNamespace {
       console.log(`${chosen}${i + 1}. ${opt.option_name}`);
       if (opt.pros) console.log(`     ✅ ${opt.pros}`);
       if (opt.cons) console.log(`     ❌ ${opt.cons}`);
-      if (opt.estimated_effort) console.log(`     ⚡ Effort: ${opt.estimated_effort}`);
+      if (opt.estimated_effort)
+        console.log(`     ⚡ Effort: ${opt.estimated_effort}`);
       console.log("");
     });
 
@@ -901,7 +1044,7 @@ export class AIWorkNamespace {
       name,
       description,
       context,
-      session?.id
+      session?.id,
     );
 
     console.log(`✅ Snapshot "${name}" created (ID: ${snapshotId})`);
@@ -923,7 +1066,7 @@ export class AIWorkNamespace {
     }
 
     console.log(`\n📸 Context Snapshots:\n`);
-    snapshots.forEach(snap => {
+    snapshots.forEach((snap) => {
       console.log(`${snap.id}. ${snap.name}`);
       console.log(`   ${new Date(snap.created_at).toLocaleString()}`);
       if (snap.description) console.log(`   ${snap.description}`);
@@ -946,7 +1089,7 @@ export class AIWorkNamespace {
       componentName,
       filePath,
       startLine ? parseInt(startLine) : null,
-      endLine ? parseInt(endLine) : null
+      endLine ? parseInt(endLine) : null,
     );
 
     console.log(`✅ Mapped "${componentName}" to ${filePath}`);
@@ -960,7 +1103,10 @@ export class AIWorkNamespace {
       return;
     }
 
-    const locations = this.ai.findCodeLocations(this.currentProjectId, componentName);
+    const locations = this.ai.findCodeLocations(
+      this.currentProjectId,
+      componentName,
+    );
 
     if (locations.length === 0) {
       console.log("ℹ️  No code locations mapped");
@@ -968,7 +1114,7 @@ export class AIWorkNamespace {
     }
 
     console.log(`\n📍 Code Locations:\n`);
-    locations.forEach(loc => {
+    locations.forEach((loc) => {
       console.log(`📦 ${loc.component_name}`);
       console.log(`   File: ${loc.file_path}`);
       if (loc.start_line) {
@@ -994,7 +1140,7 @@ export class AIWorkNamespace {
 
     console.log(`📊 Current Work: ${context.currentWork.length} tasks pending`);
     if (context.currentWork.length > 0) {
-      context.currentWork.slice(0, 3).forEach(task => {
+      context.currentWork.slice(0, 3).forEach((task) => {
         console.log(`   - ${task.name}`);
       });
       if (context.currentWork.length > 3) {
@@ -1004,13 +1150,15 @@ export class AIWorkNamespace {
 
     console.log(`\n📦 Patterns: ${context.patterns.length} available`);
     if (context.patterns.length > 0) {
-      context.patterns.slice(0, 3).forEach(p => {
-        console.log(`   - ${p.name} (used ${p.times_used}x, ${(p.success_rate * 100).toFixed(0)}% success)`);
+      context.patterns.slice(0, 3).forEach((p) => {
+        console.log(
+          `   - ${p.name} (used ${p.times_used}x, ${(p.success_rate * 100).toFixed(0)}% success)`,
+        );
       });
     }
 
     console.log(`\n🤔 Recent Decisions: ${context.decisions.length}`);
-    context.decisions.forEach(d => {
+    context.decisions.forEach((d) => {
       const status = d.decided_at ? "✅" : "🤔";
       console.log(`   ${status} ${d.question}`);
     });
@@ -1019,8 +1167,10 @@ export class AIWorkNamespace {
     if (context.qualityMetrics.length === 0) {
       console.log(`   No issues tracked yet`);
     } else {
-      context.qualityMetrics.slice(0, 5).forEach(m => {
-        console.log(`   ${m.component_name}: ${m.issues} issues (${m.unresolved} unresolved)`);
+      context.qualityMetrics.slice(0, 5).forEach((m) => {
+        console.log(
+          `   ${m.component_name}: ${m.issues} issues (${m.unresolved} unresolved)`,
+        );
       });
     }
 
@@ -1032,5 +1182,3 @@ export class AIWorkNamespace {
     }
   }
 }
-
-export { AIWorkAPI, AIWorkNamespace };
