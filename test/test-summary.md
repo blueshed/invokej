@@ -146,10 +146,10 @@ bun test test/integration/
 bun test --watch
 
 # Run with custom scripts
-npm run test:context
-npm run test:cli
-npm run test:plugins
-npm run test:integration
+bun run test:context
+bun run test:cli
+bun run test:plugins
+bun run test:integration
 ```
 
 ## Expected Test Results
