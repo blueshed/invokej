@@ -2,7 +2,7 @@ import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { unlinkSync, existsSync } from "fs";
 import { AIWorkAPI, AIWorkNamespace } from "../plugins/ai_work_mgr.js";
 
-const TEST_DB = "test-ai-work.db";
+const TEST_DB = "/tmp/test-ai-work.db";
 
 describe("AIWorkAPI", () => {
   let api;
@@ -572,7 +572,7 @@ describe("AIWorkAPI", () => {
       expect(locations.length).toBe(2);
     });
 
-    test("should update code location timestamp", () => {
+    test("should update code location timestamp", async () => {
       const locationId = api.mapCodeLocation(
         projectId,
         "Test Component",
