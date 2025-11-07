@@ -706,7 +706,10 @@ export class AIWorkAPI extends WorkAPI {
 export class AIWorkNamespace {
   constructor(dbPath = "work.db") {
     this.ai = new AIWorkAPI(dbPath);
-    this.currentProjectId = null;
+
+    // Load current project ID from settings (persisted between commands)
+    const savedProjectId = this.ai.getSetting('current_project_id');
+    this.currentProjectId = savedProjectId ? parseInt(savedProjectId) : null;
   }
 
   // ==================== Project Management ====================
@@ -791,7 +794,10 @@ export class AIWorkNamespace {
       return;
     }
 
+    // Save to memory and persist to database
     this.currentProjectId = id;
+    this.ai.setSetting('current_project_id', id.toString());
+
     console.log(`✅ Project "${project.name}" (ID: ${id}) set as current context`);
   }
 
@@ -804,6 +810,9 @@ export class AIWorkNamespace {
       return;
     }
 
+    // Get project name
+    const project = this.ai.getProject(this.currentProjectId);
+
     const sessionId = this.ai.startSession(
       this.currentProjectId,
       model,
@@ -811,7 +820,7 @@ export class AIWorkNamespace {
       goal,
     );
 
-    console.log(`🚀 Session ${sessionId} started`);
+    console.log(`🚀 Session ${sessionId} started for "${project.name}"`);
     console.log(`   Model: ${model}`);
     if (goal) console.log(`   Goal: ${goal}`);
 
@@ -856,14 +865,15 @@ export class AIWorkNamespace {
       return;
     }
 
+    const project = this.ai.getProject(this.currentProjectId);
     const session = this.ai.getCurrentSession(this.currentProjectId);
     if (!session) {
-      console.log("ℹ️  No active session");
+      console.log(`ℹ️  No active session for "${project.name}"`);
       return;
     }
 
     const summary = this.ai.getSessionSummary(session.id);
-    console.log(`\n🔄 Active Session ${session.id}`);
+    console.log(`\n🔄 Active Session ${session.id} for "${project.name}"`);
     console.log(`   Model: ${session.model}`);
     console.log(`   Started: ${new Date(session.started_at).toLocaleString()}`);
     if (session.session_goal) {
@@ -1211,12 +1221,14 @@ export class AIWorkNamespace {
   async context(c) {
     if (!this.currentProjectId) {
       console.error("❌ No project set");
+      console.log("   Use: invj ai:projectList to see available projects");
+      console.log("   Use: invj ai:setProject <id> to set current project");
       return;
     }
 
     const context = this.ai.getAIContext(this.currentProjectId);
 
-    console.log(`\n🧠 AI Context for Project ${this.currentProjectId}\n`);
+    console.log(`\n🧠 AI Context for Project: ${context.project.name} (ID: ${this.currentProjectId})\n`);
 
     console.log(`📊 Current Work: ${context.currentWork.length} tasks pending`);
     if (context.currentWork.length > 0) {

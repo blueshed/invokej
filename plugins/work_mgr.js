@@ -55,6 +55,12 @@ const WORK_SCHEMA = `
       CHECK (source_context_id != target_context_id)
   );
 
+  -- Settings table for persisting state between command invocations
+  CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT
+  );
+
   -- Indexes based on API query patterns
   CREATE INDEX IF NOT EXISTS idx_tasks_project_id ON tasks(project_id);
   CREATE INDEX IF NOT EXISTS idx_tasks_completed_work ON tasks(completed_at) WHERE completed_at IS NULL;
@@ -273,6 +279,21 @@ class WorkAPI {
       );
       return stmt.run(sourceContextId, targetContextId, relationshipType);
     }
+  }
+
+  // Settings
+  getSetting(key) {
+    const result = this.db
+      .query("SELECT value FROM settings WHERE key = ?")
+      .get(key);
+    return result ? result.value : null;
+  }
+
+  setSetting(key, value) {
+    const stmt = this.db.prepare(
+      "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)"
+    );
+    return stmt.run(key, value);
   }
 
   close() {
