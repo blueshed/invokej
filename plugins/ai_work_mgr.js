@@ -742,7 +742,7 @@ export class AIWorkNamespace {
     this.ai.db
       .prepare(
         `INSERT OR REPLACE INTO config (key, value, updated_at)
-         VALUES ('current_project_id', ?, datetime('now'))`
+         VALUES ('current_project_id', ?, datetime('now'))`,
       )
       .run(projectId.toString());
   }
@@ -771,7 +771,7 @@ export class AIWorkNamespace {
     }
 
     console.log("\n📂 Projects:\n");
-    projects.forEach(p => {
+    projects.forEach((p) => {
       const current = p.id === this.currentProjectId ? " (current)" : "";
       console.log(`${p.id}. ${p.name}${current}`);
     });
@@ -797,8 +797,8 @@ export class AIWorkNamespace {
     console.log(`\n📂 Project: ${project.name} (ID: ${id})\n`);
     console.log(`Tasks: ${project.tasks.length} total`);
 
-    const pending = project.tasks.filter(t => !t.completed_at);
-    const completed = project.tasks.filter(t => t.completed_at);
+    const pending = project.tasks.filter((t) => !t.completed_at);
+    const completed = project.tasks.filter((t) => t.completed_at);
 
     console.log(`   ${pending.length} pending`);
     console.log(`   ${completed.length} completed`);
@@ -833,7 +833,9 @@ export class AIWorkNamespace {
     this.currentProjectId = id;
     this._saveCurrentProject(id);
 
-    console.log(`✅ Project "${project.name}" (ID: ${id}) set as current context`);
+    console.log(
+      `✅ Project "${project.name}" (ID: ${id}) set as current context`,
+    );
   }
 
   // ==================== Session Commands ====================
@@ -1250,6 +1252,100 @@ export class AIWorkNamespace {
     });
   }
 
+  // ==================== Task Management ====================
+  // Expose WorkAPI task management methods
+
+  /** Add a new task to the current project */
+  async taskAdd(c, name, dueDate = null) {
+    if (!this.currentProjectId) {
+      console.error("❌ No project set");
+      return;
+    }
+
+    const result = this.ai.saveTask(this.currentProjectId, name, dueDate);
+    const taskId = result.lastInsertRowid;
+
+    console.log(`✅ Task "${name}" added (ID: ${taskId})`);
+    if (dueDate) console.log(`   Due: ${dueDate}`);
+  }
+
+  /** List all tasks in the current project */
+  async taskList(c, showCompleted = false) {
+    if (!this.currentProjectId) {
+      console.error("❌ No project set");
+      return;
+    }
+
+    const project = this.ai.getProject(this.currentProjectId);
+    const pending = project.tasks.filter((t) => !t.completed_at);
+    const completed = project.tasks.filter((t) => t.completed_at);
+
+    console.log(`\n📋 Tasks for "${project.name}":\n`);
+
+    if (pending.length > 0) {
+      console.log("⏳ Pending:");
+      pending.forEach((task) => {
+        const dueInfo = task.due_date ? ` (due: ${task.due_date})` : "";
+        console.log(`   ${task.id}. ${task.name}${dueInfo}`);
+      });
+    } else {
+      console.log("⏳ No pending tasks");
+    }
+
+    if (showCompleted === "true" || showCompleted === true) {
+      console.log("");
+      if (completed.length > 0) {
+        console.log("✅ Completed:");
+        completed.forEach((task) => {
+          const completedAt = new Date(task.completed_at).toLocaleDateString();
+          console.log(`   ${task.id}. ${task.name} (${completedAt})`);
+        });
+      }
+    }
+
+    console.log(
+      `\nTotal: ${pending.length} pending, ${completed.length} completed`,
+    );
+  }
+
+  /** Show tasks ready to work on (no blocking dependencies) */
+  async taskWork(c) {
+    if (!this.currentProjectId) {
+      console.error("❌ No project set");
+      return;
+    }
+
+    const readyTasks = this.ai.getWork(this.currentProjectId);
+
+    console.log(`\n🎯 Tasks Ready to Work On:\n`);
+
+    if (readyTasks.length === 0) {
+      console.log("ℹ️  No tasks available");
+      return;
+    }
+
+    readyTasks.forEach((task) => {
+      const dueInfo = task.due_date ? ` 📅 ${task.due_date}` : "";
+      console.log(`${task.id}. ${task.name}${dueInfo}`);
+    });
+
+    console.log(`\nTotal: ${readyTasks.length} task(s) ready`);
+  }
+
+  /** Mark a task as completed */
+  async taskComplete(c, taskId) {
+    this.ai.completeWork(parseInt(taskId));
+    console.log(`✅ Task ${taskId} marked as completed`);
+  }
+
+  /** Add or remove task dependency */
+  async taskDepends(c, taskId, dependsOnId) {
+    this.ai.toggleDependency(parseInt(taskId), parseInt(dependsOnId));
+    console.log(
+      `✅ Toggled dependency: task ${taskId} depends on ${dependsOnId}`,
+    );
+  }
+
   // ==================== Context Overview ====================
 
   /** Show comprehensive AI context */
@@ -1263,7 +1359,9 @@ export class AIWorkNamespace {
 
     const context = this.ai.getAIContext(this.currentProjectId);
 
-    console.log(`\n🧠 AI Context for Project: ${context.project.name} (ID: ${this.currentProjectId})\n`);
+    console.log(
+      `\n🧠 AI Context for Project: ${context.project.name} (ID: ${this.currentProjectId})\n`,
+    );
 
     console.log(`📊 Current Work: ${context.currentWork.length} tasks pending`);
     if (context.currentWork.length > 0) {

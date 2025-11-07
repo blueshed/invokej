@@ -17,11 +17,12 @@
   "files": [
     "cli.js",
     "context.js",
-    "tasks.js",
     "plugins.js",
     "plugins/",
     "examples/",
+    "docs/",
     "README.md",
+    "CLAUDE.md",
     "LICENSE"
   ],
   "scripts": {

@@ -2,6 +2,7 @@ node_modules/
 .env
 .DS_Store
 work_sample/work.db
+work.db
 
 # Test artifacts
 *.db
