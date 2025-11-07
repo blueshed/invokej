@@ -150,6 +150,14 @@ const AI_EXTENSIONS_SCHEMA = `
     FOREIGN KEY (project_id) REFERENCES projects(id)
   );
 
+  -- Configuration Storage
+  -- Persists state between command invocations (e.g., current project ID)
+  CREATE TABLE IF NOT EXISTS config (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
   -- Indexes for common queries
   CREATE INDEX IF NOT EXISTS idx_ai_sessions_project ON ai_sessions(project_id);
   CREATE INDEX IF NOT EXISTS idx_ai_sessions_started ON ai_sessions(started_at);
@@ -707,9 +715,36 @@ export class AIWorkNamespace {
   constructor(dbPath = "work.db") {
     this.ai = new AIWorkAPI(dbPath);
 
-    // Load current project ID from settings (persisted between commands)
-    const savedProjectId = this.ai.getSetting('current_project_id');
-    this.currentProjectId = savedProjectId ? parseInt(savedProjectId) : null;
+    // Load current project ID from config (persisted between commands)
+    this._loadCurrentProject();
+  }
+
+  /** Load current project from database config */
+  _loadCurrentProject() {
+    try {
+      const result = this.ai.db
+        .prepare("SELECT value FROM config WHERE key = 'current_project_id'")
+        .get();
+
+      if (result) {
+        this.currentProjectId = parseInt(result.value);
+      } else {
+        this.currentProjectId = null;
+      }
+    } catch (err) {
+      // Config table might not exist yet on first run
+      this.currentProjectId = null;
+    }
+  }
+
+  /** Save current project to database config */
+  _saveCurrentProject(projectId) {
+    this.ai.db
+      .prepare(
+        `INSERT OR REPLACE INTO config (key, value, updated_at)
+         VALUES ('current_project_id', ?, datetime('now'))`
+      )
+      .run(projectId.toString());
   }
 
   // ==================== Project Management ====================
@@ -796,7 +831,7 @@ export class AIWorkNamespace {
 
     // Save to memory and persist to database
     this.currentProjectId = id;
-    this.ai.setSetting('current_project_id', id.toString());
+    this._saveCurrentProject(id);
 
     console.log(`✅ Project "${project.name}" (ID: ${id}) set as current context`);
   }
