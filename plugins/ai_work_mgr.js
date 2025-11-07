@@ -1112,5 +1112,3 @@ export class AIWorkNamespace {
     }
   }
 }
-
-export { AIWorkAPI, AIWorkNamespace };

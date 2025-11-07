@@ -15,6 +15,14 @@
  *
  * This is designed for AI-human collaboration where the AI needs persistent
  * memory across sessions.
+ *
+ * SETUP:
+ * If using invokej from npm/global install:
+ *   import { AIWorkNamespace } from "invokej/plugins";
+ *
+ * If developing invokej locally:
+ *   1. Run `bun link` in the invokej directory
+ *   2. Then this import will use your local development version
  */
 
 import { AIWorkNamespace } from "invokej/plugins";
