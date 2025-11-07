@@ -219,11 +219,24 @@ quality_events      -- Issue tracking
 
 ## Real-World AI Workflow
 
+### First Time Setup
+
+```bash
+# Create a project
+invj ai:projectCreate "My App"
+# Returns: ✅ Project "My App" created (ID: 1)
+
+# List all projects
+invj ai:projectList
+
+# Set as current
+invj ai:setProject 1
+```
+
 ### Morning Session
 
 ```bash
-# 1. Start
-invj ai:setProject 1
+# 1. Start (project already set)
 invj ai:sessionStart claude-3.5-sonnet "Fix authentication bug"
 
 # 2. Load context
